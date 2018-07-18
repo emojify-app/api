@@ -1,0 +1,9 @@
+.DS_Store
+.envrc
+terraform.tfstate
+terraform.tfstate.backup
+.terraform
+*.zip
+emojify-api
+node_modules
+cache
