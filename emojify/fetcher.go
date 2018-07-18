@@ -5,7 +5,6 @@ import (
 	"image"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 )
@@ -22,8 +21,6 @@ type FetcherImpl struct {
 }
 
 func (f *FetcherImpl) FetchImage(uri string) (io.ReadSeeker, error) {
-	log.Println("Fetching: ", uri)
-
 	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err

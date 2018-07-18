@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/nicholasjackson/emojify/emojify"
+	hclog "github.com/hashicorp/go-hclog"
+	"github.com/nicholasjackson/emojify-api/emojify"
 
 	_ "image/gif"
 	_ "image/jpeg"
@@ -17,16 +18,19 @@ func init() {
 }
 
 func main() {
+	logger := hclog.Default()
+	logger.Info("Started API Server", "version", 0.3)
+
 	f := &emojify.FetcherImpl{}
 	e := emojify.NewEmojify(f, "./images/")
-	eh := emojiHandler{fetcher: f, emojifyer: e}
+	eh := emojiHandler{fetcher: f, emojifyer: e, logger: logger.Named("emojiHandler")}
 	hh := healthHandler{}
 
 	http.HandleFunc("/", eh.Handle)
 	http.HandleFunc("/health", hh.Handle)
 	http.Handle("/cache/", http.StripPrefix("/cache", http.FileServer(http.Dir("./cache"))))
 
-	log.Println("Starting server on port 9090")
+	logger.Info("Starting server on port 9090")
 	err := http.ListenAndServe(":9090", http.DefaultServeMux)
 
 	log.Fatal(err)

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	hclog "github.com/hashicorp/go-hclog"
 	"github.com/machinebox/sdk-go/facebox"
 	"github.com/nfnt/resize"
 )
@@ -26,13 +27,15 @@ type Emojify interface {
 type EmojifyImpl struct {
 	emojis  []image.Image
 	fetcher Fetcher
+	logger  hclog.Logger
 }
 
-func NewEmojify(fetcher Fetcher, imagePath string) Emojify {
+func NewEmojify(fetcher Fetcher, logger hclog.Logger, imagePath string) Emojify {
 	emojis := loadEmojis(imagePath)
 	return &EmojifyImpl{
 		emojis:  emojis,
 		fetcher: fetcher,
+		logger:  logger,
 	}
 }
 

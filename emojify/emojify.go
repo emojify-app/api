@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/draw"
 	"io"
-	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -77,10 +76,8 @@ func loadEmojis(path string) []image.Image {
 
 	filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
 		if !f.IsDir() {
-			log.Println("Processing: ", root+f.Name())
 			reader, err := os.Open(root + f.Name())
 			if err != nil {
-				log.Println("Unable to open image")
 				return err
 			}
 			defer reader.Close()

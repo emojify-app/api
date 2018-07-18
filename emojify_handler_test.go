@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	hclog "github.com/hashicorp/go-hclog"
 	"github.com/machinebox/sdk-go/facebox"
 	"github.com/nicholasjackson/emojify/emojify"
 	"github.com/stretchr/testify/assert"
@@ -22,11 +23,12 @@ var mockEmojifyer emojify.MockEmojify
 func setupEmojiHandler() (*httptest.ResponseRecorder, *http.Request, *emojiHandler) {
 	mockFetcher = emojify.MockFetcher{}
 	mockEmojifyer = emojify.MockEmojify{}
+	logger := hclog.Default()
 
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/", nil)
 
-	h := &emojiHandler{&mockEmojifyer, &mockFetcher}
+	h := &emojiHandler{&mockEmojifyer, &mockFetcher, logger}
 
 	return rw, r, h
 }
