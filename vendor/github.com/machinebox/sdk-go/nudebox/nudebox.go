@@ -1,4 +1,4 @@
-// Package nudebox provides a client for accessing nudebox services.
+// Package nudebox provides a client for accessing Nudebox services.
 package nudebox
 
 import (
@@ -8,9 +8,10 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
-	"github.com/machinebox/sdk-go/x/boxutil"
+	"github.com/machinebox/sdk-go/boxutil"
 	"github.com/pkg/errors"
 )
 
@@ -46,11 +47,19 @@ func (c *Client) Info() (*boxutil.Info, error) {
 	if !u.IsAbs() {
 		return nil, errors.New("box address must be absolute")
 	}
-	resp, err := c.HTTPClient.Get(u.String())
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json; charset=utf-8")
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, errors.New(resp.Status)
+	}
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
 		return nil, err
 	}
@@ -79,9 +88,18 @@ func (c *Client) Check(image io.Reader) (float64, error) {
 	if !u.IsAbs() {
 		return 0, errors.New("box address must be absolute")
 	}
-	resp, err := c.HTTPClient.Post(u.String(), w.FormDataContentType(), &buf)
+	req, err := http.NewRequest("POST", u.String(), &buf)
 	if err != nil {
 		return 0, err
+	}
+	req.Header.Set("Accept", "application/json; charset=utf-8")
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return 0, errors.New(resp.Status)
 	}
 	return c.parseCheckResponse(resp.Body)
 }
@@ -100,11 +118,48 @@ func (c *Client) CheckURL(imageURL *url.URL) (float64, error) {
 	}
 	form := url.Values{}
 	form.Set("url", imageURL.String())
-	resp, err := c.HTTPClient.PostForm(u.String(), form)
+	req, err := http.NewRequest("POST", u.String(), strings.NewReader(form.Encode()))
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json; charset=utf-8")
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return 0, errors.New(resp.Status)
+	}
+	return c.parseCheckResponse(resp.Body)
+}
+
+// CheckBase64 gets the nudity probability for the Base64 encoded image.
+func (c *Client) CheckBase64(data string) (float64, error) {
+	u, err := url.Parse(c.addr + "/nudebox/check")
+	if err != nil {
+		return 0, err
+	}
+	if !u.IsAbs() {
+		return 0, errors.New("box address must be absolute")
+	}
+	form := url.Values{}
+	form.Set("base64", data)
+	req, err := http.NewRequest("POST", u.String(), strings.NewReader(form.Encode()))
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json; charset=utf-8")
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return 0, errors.New(resp.Status)
+	}
 	return c.parseCheckResponse(resp.Body)
 }
 
@@ -124,7 +179,7 @@ func (c *Client) parseCheckResponse(r io.Reader) (float64, error) {
 	return checkResponse.Nude, nil
 }
 
-// ErrNudebox represents an error from nudebox.
+// ErrNudebox represents an error from Nudebox.
 type ErrNudebox string
 
 func (e ErrNudebox) Error() string {

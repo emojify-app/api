@@ -21,9 +21,11 @@ func main() {
 	logger := hclog.Default()
 	logger.Info("Started API Server", "version", 0.3)
 
+	cache := emojify.NewFileCache("./cache/")
+
 	f := &emojify.FetcherImpl{}
 	e := emojify.NewEmojify(f, "./images/")
-	eh := emojiHandler{fetcher: f, emojifyer: e, logger: logger.Named("emojiHandler")}
+	eh := emojiHandler{fetcher: f, emojifyer: e, logger: logger.Named("emojiHandler"), cache: cache}
 	hh := healthHandler{}
 
 	http.HandleFunc("/", eh.Handle)

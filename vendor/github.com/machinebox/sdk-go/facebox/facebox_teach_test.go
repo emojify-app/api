@@ -19,6 +19,7 @@ func TestTeachURL(t *testing.T) {
 	is.NoErr(err)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/teach")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), imageURL.String())
 		is.Equal(r.FormValue("name"), "John Lennon")
 		is.Equal(r.FormValue("id"), "john1.jpg")
@@ -38,6 +39,7 @@ func TestTeachURLError(t *testing.T) {
 	is.NoErr(err)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/teach")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), imageURL.String())
 		is.Equal(r.FormValue("name"), "John Lennon")
 		is.Equal(r.FormValue("id"), "john1.jpg")
@@ -58,6 +60,7 @@ func TestTeachImage(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/teach")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("name"), "John Lennon")
 		is.Equal(r.FormValue("id"), "john1.jpg")
 		f, _, err := r.FormFile("file")
@@ -83,6 +86,7 @@ func TestTeachImageError(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/teach")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("name"), "John Lennon")
 		is.Equal(r.FormValue("id"), "john1.jpg")
 		f, _, err := r.FormFile("file")
@@ -103,4 +107,41 @@ func TestTeachImageError(t *testing.T) {
 	is.True(err != nil)
 	is.Equal(err.Error(), "facebox: something went wrong")
 
+}
+
+func TestTeachBase64(t *testing.T) {
+	is := is.New(t)
+	base64Str := "base64Str"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		is.Equal(r.URL.Path, "/facebox/teach")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
+		is.Equal(r.FormValue("base64"), base64Str)
+		is.Equal(r.FormValue("name"), "John Lennon")
+		is.Equal(r.FormValue("id"), "john1.jpg")
+		io.WriteString(w, `{
+			"success": true
+		}`)
+	}))
+	defer srv.Close()
+	fb := facebox.New(srv.URL)
+	err := fb.TeachBase64(base64Str, "john1.jpg", "John Lennon")
+	is.NoErr(err)
+}
+
+func TestRemove(t *testing.T) {
+	is := is.New(t)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		is.Equal(r.URL.Path, "/facebox/teach/john1.jpg")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
+		is.Equal(r.Method, "DELETE")
+		io.WriteString(w, `{
+			"success": true
+		}`)
+	}))
+	defer srv.Close()
+
+	fb := facebox.New(srv.URL)
+	err := fb.Remove("john1.jpg")
+	is.NoErr(err)
 }

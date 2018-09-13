@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -32,11 +34,20 @@ func (c *Client) Check(image io.Reader) ([]Face, error) {
 	if !u.IsAbs() {
 		return nil, errors.New("box address must be absolute")
 	}
-	resp, err := c.HTTPClient.Post(u.String(), w.FormDataContentType(), &buf)
+	req, err := http.NewRequest("POST", u.String(), &buf)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json; charset=utf-8")
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, errors.New(resp.Status)
+	}
 	return c.parseCheckResponse(resp.Body)
 }
 
@@ -54,11 +65,48 @@ func (c *Client) CheckURL(imageURL *url.URL) ([]Face, error) {
 	}
 	form := url.Values{}
 	form.Set("url", imageURL.String())
-	resp, err := c.HTTPClient.PostForm(u.String(), form)
+	req, err := http.NewRequest("POST", u.String(), strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json; charset=utf-8")
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, errors.New(resp.Status)
+	}
+	return c.parseCheckResponse(resp.Body)
+}
+
+// CheckBase64 checks the Base64 encoded image for faces.
+func (c *Client) CheckBase64(data string) ([]Face, error) {
+	u, err := url.Parse(c.addr + "/facebox/check")
+	if err != nil {
+		return nil, err
+	}
+	if !u.IsAbs() {
+		return nil, errors.New("box address must be absolute")
+	}
+	form := url.Values{}
+	form.Set("base64", data)
+	req, err := http.NewRequest("POST", u.String(), strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json; charset=utf-8")
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, errors.New(resp.Status)
+	}
 	return c.parseCheckResponse(resp.Body)
 }
 

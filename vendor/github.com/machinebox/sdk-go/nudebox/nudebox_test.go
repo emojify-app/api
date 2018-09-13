@@ -18,6 +18,7 @@ func TestInfo(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.Method, "GET")
 		is.Equal(r.URL.Path, "/info")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		io.WriteString(w, `{
 			"name": "nudebox",
 			"version": 1,
@@ -43,6 +44,7 @@ func TestCheckURL(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/nudebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), imageURL.String())
 		io.WriteString(w, `{
 			"success": true,
@@ -67,6 +69,7 @@ func TestCheckURLError(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/nudebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), imageURL.String())
 		io.WriteString(w, `{
 			"success": false,
@@ -82,11 +85,36 @@ func TestCheckURLError(t *testing.T) {
 
 }
 
+func TestCheckBase64(t *testing.T) {
+	is := is.New(t)
+
+	base64Str := "base64Str"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		is.Equal(r.URL.Path, "/nudebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
+		is.Equal(r.FormValue("base64"), base64Str)
+		io.WriteString(w, `{
+			"success": true,
+			"nude": 0.8
+		}`)
+	}))
+	defer srv.Close()
+
+	nb := nudebox.New(srv.URL)
+	nude, err := nb.CheckBase64(base64Str)
+	is.NoErr(err)
+
+	is.Equal(nude, 0.8)
+
+}
+
 func TestCheckImage(t *testing.T) {
 	is := is.New(t)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/nudebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		f, _, err := r.FormFile("file")
 		is.NoErr(err)
 		defer f.Close()
@@ -112,6 +140,7 @@ func TestCheckImageError(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/nudebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		f, _, err := r.FormFile("file")
 		is.NoErr(err)
 		defer f.Close()

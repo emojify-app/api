@@ -1,13 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	_ "image/jpeg"
 	"image/png"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/google/uuid"
@@ -19,6 +19,7 @@ type emojiHandler struct {
 	emojifyer emojify.Emojify
 	fetcher   emojify.Fetcher
 	logger    hclog.Logger
+	cache     emojify.Cache
 }
 
 func (e *emojiHandler) Handle(rw http.ResponseWriter, r *http.Request) {
@@ -34,6 +35,21 @@ func (e *emojiHandler) Handle(rw http.ResponseWriter, r *http.Request) {
 	if u, err = validateURL(r); err != nil {
 		e.logger.Error("Unable to process URI", "error", err)
 		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	e.logger.Info("Checking cache", "URI", u.String())
+	ok, err := e.cache.Exists(u.String())
+	if err != nil {
+		e.logger.Error("Unable to check cache", "error", err)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if ok {
+		e.logger.Info("Successfully returned image from cache", "URI", u.String())
+		rw.WriteHeader(http.StatusNotModified)
+		rw.Write([]byte(u.String()))
 		return
 	}
 
@@ -70,10 +86,19 @@ func (e *emojiHandler) Handle(rw http.ResponseWriter, r *http.Request) {
 	e.logger.Info("Successfully processed image", "file", filename)
 
 	// save the image
-	out, _ := os.Create("./cache/" + filename)
+	data := []byte{}
+	out := bytes.NewBuffer(data)
 	png.Encode(out, i)
 
-	rw.Write([]byte("/cache/" + filename))
+	// save the cache
+	err = e.cache.Put(u.String(), data)
+	if err != nil {
+		e.logger.Error("Unable to cache image", "file", filename, "error", err)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	rw.Write([]byte(u.String()))
 }
 
 func validateURL(r *http.Request) (*url.URL, error) {

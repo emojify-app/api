@@ -35,6 +35,7 @@ func TestPostState(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.Method, "POST")
 		is.Equal(r.URL.Path, "/facebox/state")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		f, _, err := r.FormFile("file")
 		is.NoErr(err)
 		b, err := ioutil.ReadAll(f)
@@ -54,6 +55,7 @@ func TestPostStateError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.Method, "POST")
 		is.Equal(r.URL.Path, "/facebox/state")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		f, _, err := r.FormFile("file")
 		is.NoErr(err)
 		b, err := ioutil.ReadAll(f)
@@ -74,6 +76,7 @@ func TestPostStateURL(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.Method, "POST")
 		is.Equal(r.URL.Path, "/facebox/state")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), "https://test.machinebox.io/test.facebox")
 		io.WriteString(w, `{"success":true}`)
 	}))
@@ -90,6 +93,7 @@ func TestPostStateURLError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.Method, "POST")
 		is.Equal(r.URL.Path, "/facebox/state")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), "https://test.machinebox.io/test.facebox")
 		io.WriteString(w, `{"success":false,"error":"something went wrong"}`)
 	}))

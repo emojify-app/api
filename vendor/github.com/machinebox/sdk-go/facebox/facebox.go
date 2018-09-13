@@ -1,4 +1,4 @@
-// Package facebox provides a client for accessing facebox services.
+// Package facebox provides a client for accessing Facebox services.
 package facebox
 
 import (
@@ -8,15 +8,16 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/machinebox/sdk-go/x/boxutil"
+	"github.com/machinebox/sdk-go/boxutil"
 )
 
 // Face represents a face in an image.
 type Face struct {
-	Rect    Rect
-	ID      string
-	Name    string
-	Matched bool
+	Rect       Rect
+	ID         string
+	Name       string
+	Matched    bool
+	Confidence float64
 }
 
 // Rect represents the coordinates of a face within an image.
@@ -63,18 +64,26 @@ func (c *Client) Info() (*boxutil.Info, error) {
 	if !u.IsAbs() {
 		return nil, errors.New("box address must be absolute")
 	}
-	resp, err := c.HTTPClient.Get(u.String())
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json; charset=utf-8")
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, errors.New(resp.Status)
+	}
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
 		return nil, err
 	}
 	return &info, nil
 }
 
-// ErrFacebox represents an error from nudebox.
+// ErrFacebox represents an error from Facebox.
 type ErrFacebox string
 
 func (e ErrFacebox) Error() string {

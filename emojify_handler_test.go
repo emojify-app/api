@@ -12,23 +12,25 @@ import (
 
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/machinebox/sdk-go/facebox"
-	"github.com/nicholasjackson/emojify/emojify"
+	"github.com/nicholasjackson/emojify-api/emojify"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 var mockFetcher emojify.MockFetcher
 var mockEmojifyer emojify.MockEmojify
+var mockCache emojify.MockCache
 
 func setupEmojiHandler() (*httptest.ResponseRecorder, *http.Request, *emojiHandler) {
 	mockFetcher = emojify.MockFetcher{}
 	mockEmojifyer = emojify.MockEmojify{}
+	mockCache = emojify.MockCache{}
 	logger := hclog.Default()
 
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/", nil)
 
-	h := &emojiHandler{&mockEmojifyer, &mockFetcher, logger}
+	h := &emojiHandler{&mockEmojifyer, &mockFetcher, logger, &mockCache}
 
 	return rw, r, h
 }
@@ -49,7 +51,7 @@ func TestReturnsBadRequestIfBodyLessThan8(t *testing.T) {
 	h.Handle(rw, r)
 
 	assert.Equal(t, http.StatusBadRequest, rw.Code)
-	assert.Equal(t, " is not a valid URL", string(rw.Body.Bytes()))
+	assert.Equal(t, " is not a valid URL\n", string(rw.Body.Bytes()))
 }
 
 func TestReturnsInvalidURLIfBodyNotURL(t *testing.T) {
@@ -59,7 +61,30 @@ func TestReturnsInvalidURLIfBodyNotURL(t *testing.T) {
 	h.Handle(rw, r)
 
 	assert.Equal(t, http.StatusBadRequest, rw.Code)
-	assert.Equal(t, "httsddfdfdf/cc is not a valid URL", string(rw.Body.Bytes()))
+	assert.Equal(t, "httsddfdfdf/cc is not a valid URL\n", string(rw.Body.Bytes()))
+}
+
+func TestReturns302IfImageIsCached(t *testing.T) {
+	url := "https://something.com"
+	rw, r, h := setupEmojiHandler()
+	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
+	mockCache.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
+
+	h.Handle(rw, r)
+
+	assert.Equal(t, http.StatusNotModified, rw.Code)
+}
+
+func TestReturnsInternalServerErrorWhenCacheError(t *testing.T) {
+	url := "https://something.com"
+	rw, r, h := setupEmojiHandler()
+	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
+	mockFetcher.On("FetchImage", url).Return(nil, fmt.Errorf("Unable to get image"))
+	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, fmt.Errorf("boom"))
+
+	h.Handle(rw, r)
+
+	assert.Equal(t, http.StatusInternalServerError, rw.Code)
 }
 
 func TestReturnsInternalServerErrorWhenCantFetchImage(t *testing.T) {
@@ -67,6 +92,7 @@ func TestReturnsInternalServerErrorWhenCantFetchImage(t *testing.T) {
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
 	mockFetcher.On("FetchImage", url).Return(nil, fmt.Errorf("Unable to get image"))
+	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
 
 	h.Handle(rw, r)
 
@@ -79,11 +105,12 @@ func TestRetrunsInternalServerErrorWhenDataNotImage(t *testing.T) {
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
 	mockFetcher.On("FetchImage", url).Return(bytes.NewReader([]byte("")), nil)
 	mockFetcher.On("ReaderToImage", mock.Anything).Return(nil, fmt.Errorf("Invalid image"))
+	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
 
 	h.Handle(rw, r)
 
 	assert.Equal(t, http.StatusInternalServerError, rw.Code)
-	assert.Equal(t, "invalid image format "+url, string(rw.Body.Bytes()))
+	assert.Equal(t, "Invalid image\n", string(rw.Body.Bytes()))
 }
 
 func TestRetrunsInternalServerErrorWhenDataNoFaces(t *testing.T) {
@@ -93,11 +120,12 @@ func TestRetrunsInternalServerErrorWhenDataNoFaces(t *testing.T) {
 	mockFetcher.On("FetchImage", url).Return(bytes.NewReader([]byte("")), nil)
 	mockFetcher.On("ReaderToImage", mock.Anything).Return(image.NewUniform(color.Black), nil)
 	mockEmojifyer.On("GetFaces", mock.Anything).Return(nil, fmt.Errorf("No faces"))
+	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
 
 	h.Handle(rw, r)
 
 	assert.Equal(t, http.StatusInternalServerError, rw.Code)
-	assert.Equal(t, "unable to find faces in "+url, string(rw.Body.Bytes()))
+	assert.Equal(t, "No faces\n", string(rw.Body.Bytes()))
 }
 
 func TestReturnsInternalServerErrorWhenUnableToEmojify(t *testing.T) {
@@ -108,11 +136,28 @@ func TestReturnsInternalServerErrorWhenUnableToEmojify(t *testing.T) {
 	mockFetcher.On("ReaderToImage", mock.Anything).Return(image.NewUniform(color.Black), nil)
 	mockEmojifyer.On("GetFaces", mock.Anything).Return(make([]facebox.Face, 0), nil)
 	mockEmojifyer.On("Emojimise", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("Cant emojify"))
+	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
 
 	h.Handle(rw, r)
 
 	assert.Equal(t, http.StatusInternalServerError, rw.Code)
-	assert.Equal(t, "unable to emojify "+url, string(rw.Body.Bytes()))
+	assert.Equal(t, "Cant emojify\n", string(rw.Body.Bytes()))
+}
+
+func TestReturnsInternalServiceErrorWhenUnableToSaveCache(t *testing.T) {
+	url := "https://something.com"
+	rw, r, h := setupEmojiHandler()
+	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
+	mockFetcher.On("FetchImage", url).Return(bytes.NewReader([]byte("")), nil)
+	mockFetcher.On("ReaderToImage", mock.Anything).Return(image.NewUniform(color.Black), nil)
+	mockEmojifyer.On("GetFaces", mock.Anything).Return(make([]facebox.Face, 0), nil)
+	mockEmojifyer.On("Emojimise", mock.Anything, mock.Anything).Return(image.NewRGBA64(image.Rect(0, 0, 0, 0)), nil)
+	mockCache.On("Put", mock.Anything, mock.Anything).Return(fmt.Errorf("Boom"))
+	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
+
+	h.Handle(rw, r)
+
+	assert.Equal(t, http.StatusInternalServerError, rw.Code)
 }
 
 func TestSetsHeaderWhenOK(t *testing.T) {
@@ -123,9 +168,10 @@ func TestSetsHeaderWhenOK(t *testing.T) {
 	mockFetcher.On("ReaderToImage", mock.Anything).Return(image.NewUniform(color.Black), nil)
 	mockEmojifyer.On("GetFaces", mock.Anything).Return(make([]facebox.Face, 0), nil)
 	mockEmojifyer.On("Emojimise", mock.Anything, mock.Anything).Return(image.NewRGBA64(image.Rect(0, 0, 0, 0)), nil)
+	mockCache.On("Put", mock.Anything, mock.Anything).Return(nil)
+	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
 
 	h.Handle(rw, r)
 
 	assert.Equal(t, http.StatusOK, rw.Code)
-	assert.Equal(t, rw.HeaderMap.Get("content-type"), "image/png")
 }

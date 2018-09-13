@@ -1,8 +1,0 @@
-.DS_Store
-.envrc
-terraform.tfstate
-terraform.tfstate.backup
-.terraform
-*.zip
-emojifyServer
-node_modules

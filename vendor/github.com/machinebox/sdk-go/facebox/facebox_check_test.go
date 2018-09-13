@@ -21,6 +21,7 @@ func TestCheckURL(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), imageURL.String())
 		io.WriteString(w, `{
 			"success": true,
@@ -30,13 +31,15 @@ func TestCheckURL(t *testing.T) {
 					"rect": { "top": 0, "left": 0, "width": 120, "height": 120 },
 					"id": "file1.jpg",
 					"name": "John Lennon",
-					"matched": true
+					"matched": true,
+					"confidence": 0.8
 				},
 				{
 					"rect": { "top": 200, "left": 200, "width": 100, "height": 100 },
 					"id": "file6.jpg",
 					"name": "Ringo Starr",
-					"matched": true
+					"matched": true,
+					"confidence": 0.7
 				},
 				{
 					"rect": { "top": 50, "left": 50, "width": 100, "height": 100 },
@@ -59,6 +62,7 @@ func TestCheckURL(t *testing.T) {
 	is.Equal(faces[0].ID, "file1.jpg")
 	is.Equal(faces[0].Name, "John Lennon")
 	is.Equal(faces[0].Matched, true)
+	is.Equal(faces[0].Confidence, 0.8)
 
 	is.Equal(faces[1].Rect.Top, 200)
 	is.Equal(faces[1].Rect.Left, 200)
@@ -67,6 +71,7 @@ func TestCheckURL(t *testing.T) {
 	is.Equal(faces[1].ID, "file6.jpg")
 	is.Equal(faces[1].Name, "Ringo Starr")
 	is.Equal(faces[1].Matched, true)
+	is.Equal(faces[1].Confidence, 0.7)
 
 	is.Equal(faces[2].Rect.Top, 50)
 	is.Equal(faces[2].Rect.Left, 50)
@@ -86,6 +91,7 @@ func TestCheckURLError(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), imageURL.String())
 		io.WriteString(w, `{
 			"success": false,
@@ -106,6 +112,7 @@ func TestCheckImage(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		f, _, err := r.FormFile("file")
 		is.NoErr(err)
 		defer f.Close()
@@ -173,6 +180,7 @@ func TestCheckImageError(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		f, _, err := r.FormFile("file")
 		is.NoErr(err)
 		defer f.Close()
@@ -190,5 +198,49 @@ func TestCheckImageError(t *testing.T) {
 	_, err := fb.Check(strings.NewReader(`(pretend this is image data)`))
 	is.True(err != nil)
 	is.Equal(err.Error(), "facebox: something went wrong")
+
+}
+
+func TestCheckBase64(t *testing.T) {
+	is := is.New(t)
+
+	base64Str := `base64Str`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		is.Equal(r.URL.Path, "/facebox/check")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
+		is.Equal(r.FormValue("base64"), base64Str)
+		io.WriteString(w, `{
+				"success": true,
+				"facesCount": 3,
+				"faces": [
+					{
+						"rect": { "top": 0, "left": 0, "width": 120, "height": 120 },
+						"id": "file1.jpg",
+						"name": "John Lennon",
+						"matched": true,
+						"confidence": 0.8
+					},
+					{
+						"rect": { "top": 200, "left": 200, "width": 100, "height": 100 },
+						"id": "file6.jpg",
+						"name": "Ringo Starr",
+						"matched": true,
+						"confidence": 0.7
+					},
+					{
+						"rect": { "top": 50, "left": 50, "width": 100, "height": 100 },
+						"matched": false
+					}
+				]
+			}`)
+	}))
+	defer srv.Close()
+
+	fb := facebox.New(srv.URL)
+	faces, err := fb.CheckBase64(base64Str)
+	is.NoErr(err)
+
+	is.Equal(len(faces), 3)
 
 }

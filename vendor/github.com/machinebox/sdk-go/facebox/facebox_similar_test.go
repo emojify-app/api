@@ -21,6 +21,7 @@ func TestSimilarURL(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/similar")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), imageURL.String())
 		io.WriteString(w, `{
 			"success": true,
@@ -67,6 +68,7 @@ func TestSimilarURLError(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/similar")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		is.Equal(r.FormValue("url"), imageURL.String())
 		io.WriteString(w, `{
 			"success": false,
@@ -87,6 +89,7 @@ func TestSimilarImage(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/similar")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		f, _, err := r.FormFile("file")
 		is.NoErr(err)
 		defer f.Close()
@@ -135,6 +138,7 @@ func TestSimilarImageError(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		is.Equal(r.URL.Path, "/facebox/similar")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
 		f, _, err := r.FormFile("file")
 		is.NoErr(err)
 		defer f.Close()
@@ -152,5 +156,86 @@ func TestSimilarImageError(t *testing.T) {
 	_, err := fb.Similar(strings.NewReader(`(pretend this is image data)`))
 	is.True(err != nil)
 	is.Equal(err.Error(), "facebox: something went wrong")
+
+}
+
+func TestSimilarID(t *testing.T) {
+	is := is.New(t)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		is.Equal(r.URL.Path, "/facebox/similar")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
+		is.Equal(r.FormValue("id"), "abc123")
+		io.WriteString(w, `{
+			"success": true,
+			"similarCount": 3,
+			"similar": [
+				{
+					"id": "file1.jpg",
+					"name": "Ringo Starr"
+				},
+				{
+					"id": "file2.jpg",
+					"name": "Ringo Starr"
+				},
+				{
+					"id": "file3.jpg",
+					"name": "Ringo Starr"
+				}
+			]
+		}`)
+	}))
+	defer srv.Close()
+
+	fb := facebox.New(srv.URL)
+	similar, err := fb.SimilarID("abc123")
+	is.NoErr(err)
+
+	is.Equal(len(similar), 3)
+	is.Equal(similar[0].ID, "file1.jpg")
+	is.Equal(similar[0].Name, "Ringo Starr")
+
+	is.Equal(similar[1].ID, "file2.jpg")
+	is.Equal(similar[1].Name, "Ringo Starr")
+
+	is.Equal(similar[2].ID, "file3.jpg")
+	is.Equal(similar[2].Name, "Ringo Starr")
+}
+
+func TestSimilarBase64(t *testing.T) {
+	is := is.New(t)
+
+	base64Str := "base64Str"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		is.Equal(r.URL.Path, "/facebox/similar")
+		is.Equal(r.Header.Get("Accept"), "application/json; charset=utf-8")
+		is.Equal(r.FormValue("base64"), base64Str)
+		io.WriteString(w, `{
+			"success": true,
+			"similarCount": 3,
+			"similar": [
+				{
+					"id": "file1.jpg",
+					"name": "Ringo Starr"
+				},
+				{
+					"id": "file2.jpg",
+					"name": "Ringo Starr"
+				},
+				{
+					"id": "file3.jpg",
+					"name": "Ringo Starr"
+				}
+			]
+		}`)
+	}))
+	defer srv.Close()
+
+	fb := facebox.New(srv.URL)
+	similar, err := fb.SimilarBase64(base64Str)
+	is.NoErr(err)
+
+	is.Equal(len(similar), 3)
 
 }
