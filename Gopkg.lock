@@ -35,20 +35,20 @@
   version = "v6.14.1"
 
 [[projects]]
-  digest = "1:5247b135b5492aa232a731acdcb52b08f32b874cb398f21ab460396eadbe866b"
-  name = "github.com/google/uuid"
-  packages = ["."]
-  pruneopts = ""
-  revision = "d460ce9f8df2e77fb1ba55ca87fafed96c607494"
-  version = "v1.0.0"
-
-[[projects]]
   branch = "master"
   digest = "1:7aff20224332c77b550f849f70e9e377f13578781febf4d409a441876de0999a"
   name = "github.com/hashicorp/go-hclog"
   packages = ["."]
   pruneopts = ""
   revision = "e45cbeb79f0411b1cfedd3f226ff69d5d433c762"
+
+[[projects]]
+  branch = "master"
+  digest = "1:3d36f1a3d474f4f5edbf6459a5bf6938179e64d7a42a73c42c9210e7f82052b6"
+  name = "github.com/keratin/authn-go"
+  packages = ["authn"]
+  pruneopts = ""
+  revision = "8ffae7b75297f731fd0e010cf63820f4cee887e5"
 
 [[projects]]
   digest = "1:adbf691d658a9c4d412df79f2065de297646bf9e0d8df21fd9068a4e1a9f7999"
@@ -70,6 +70,14 @@
   revision = "83c6a9932646f83e3267f353373d47347b6036b2"
 
 [[projects]]
+  digest = "1:4c0404dc03d974acd5fcd8b8d3ce687b13bd169db032b89275e8b9d77b98ce8c"
+  name = "github.com/patrickmn/go-cache"
+  packages = ["."]
+  pruneopts = ""
+  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
+  version = "v2.1.0"
+
+[[projects]]
   digest = "1:7365acd48986e205ccb8652cc746f09c8b7876030d53710ea6ef7d0bd0dcd7ca"
   name = "github.com/pkg/errors"
   packages = ["."]
@@ -84,6 +92,14 @@
   pruneopts = ""
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
+
+[[projects]]
+  digest = "1:78c9cf43ddeacd0e472f412082227a0fac2ae107ee60e9112156f9371f9912cf"
+  name = "github.com/rs/cors"
+  packages = ["."]
+  pruneopts = ""
+  revision = "3fb1b69b103a84de38a19c3c6ec073dd6caa4d3f"
+  version = "v1.5.0"
 
 [[projects]]
   digest = "1:711eebe744c0151a9d09af2315f0bb729b2ec7637ef4c410fa90a18ef74b65b6"
@@ -104,16 +120,42 @@
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
 
+[[projects]]
+  branch = "master"
+  digest = "1:6914c49eed986dfb8dffb33516fa129c49929d4d873f41e073c83c11c372b870"
+  name = "golang.org/x/crypto"
+  packages = [
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "pbkdf2",
+  ]
+  pruneopts = ""
+  revision = "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
+
+[[projects]]
+  digest = "1:ddc5fa8f9159bea7d1ce58143e6d8fd8054018f7bc3709940aa7f7bc92855ed9"
+  name = "gopkg.in/square/go-jose.v2"
+  packages = [
+    ".",
+    "cipher",
+    "json",
+    "jwt",
+  ]
+  pruneopts = ""
+  revision = "ef984e69dd356202fd4e4910d4d9c24468bdf0b8"
+  version = "v2.1.9"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/asaskevich/govalidator",
     "github.com/go-redis/redis",
-    "github.com/google/uuid",
     "github.com/hashicorp/go-hclog",
+    "github.com/keratin/authn-go/authn",
     "github.com/machinebox/sdk-go/facebox",
     "github.com/nfnt/resize",
+    "github.com/rs/cors",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/mock",
   ]

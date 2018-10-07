@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	hclog "github.com/hashicorp/go-hclog"
@@ -36,11 +37,10 @@ func setupEmojiHandler() (*httptest.ResponseRecorder, *http.Request, *emojiHandl
 }
 
 func TestReturnsNotAllowedIfMethodNotPOST(t *testing.T) {
-	rw := httptest.NewRecorder()
+	rw, _, h := setupEmojiHandler()
 	r := httptest.NewRequest("GET", "/", nil)
 
-	handler := emojiHandler{}
-	handler.Handle(rw, r)
+	h.Handle(rw, r)
 
 	assert.Equal(t, http.StatusMethodNotAllowed, rw.Code)
 }
@@ -65,14 +65,16 @@ func TestReturnsInvalidURLIfBodyNotURL(t *testing.T) {
 }
 
 func TestReturns302IfImageIsCached(t *testing.T) {
-	url := "https://something.com"
+	u, _ := url.Parse(fileURL)
+
 	rw, r, h := setupEmojiHandler()
-	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
+	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(u.String())))
 	mockCache.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
 
 	h.Handle(rw, r)
 
-	assert.Equal(t, http.StatusNotModified, rw.Code)
+	assert.Equal(t, http.StatusOK, rw.Code)
+	assert.Equal(t, base64URL, rw.Body.String())
 }
 
 func TestReturnsInternalServerErrorWhenCacheError(t *testing.T) {
@@ -99,7 +101,7 @@ func TestReturnsInternalServerErrorWhenCantFetchImage(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, rw.Code)
 }
 
-func TestRetrunsInternalServerErrorWhenDataNotImage(t *testing.T) {
+func TestReturnsInternalServerErrorWhenDataNotImage(t *testing.T) {
 	url := "https://something.com"
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
@@ -113,7 +115,7 @@ func TestRetrunsInternalServerErrorWhenDataNotImage(t *testing.T) {
 	assert.Equal(t, "Invalid image\n", string(rw.Body.Bytes()))
 }
 
-func TestRetrunsInternalServerErrorWhenDataNoFaces(t *testing.T) {
+func TestReturnsInternalServerErrorWhenDataNoFaces(t *testing.T) {
 	url := "https://something.com"
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
@@ -160,14 +162,15 @@ func TestReturnsInternalServiceErrorWhenUnableToSaveCache(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, rw.Code)
 }
 
-func TestSetsHeaderWhenOK(t *testing.T) {
+func TestReturnsStatusOKOnSuccess(t *testing.T) {
 	url := "https://something.com"
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
+	img := image.NewRGBA64(image.Rect(0, 0, 400, 400))
 	mockFetcher.On("FetchImage", url).Return(bytes.NewReader([]byte("")), nil)
 	mockFetcher.On("ReaderToImage", mock.Anything).Return(image.NewUniform(color.Black), nil)
 	mockEmojifyer.On("GetFaces", mock.Anything).Return(make([]facebox.Face, 0), nil)
-	mockEmojifyer.On("Emojimise", mock.Anything, mock.Anything).Return(image.NewRGBA64(image.Rect(0, 0, 0, 0)), nil)
+	mockEmojifyer.On("Emojimise", mock.Anything, mock.Anything).Return(img, nil)
 	mockCache.On("Put", mock.Anything, mock.Anything).Return(nil)
 	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
 

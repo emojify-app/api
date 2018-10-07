@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	_ "image/jpeg"
 	"image/png"
@@ -10,7 +11,6 @@ import (
 	"net/url"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/google/uuid"
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/nicholasjackson/emojify-api/emojify"
 )
@@ -22,17 +22,28 @@ type emojiHandler struct {
 	cache     emojify.Cache
 }
 
+func (e emojiHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	e.Handle(rw, r)
+}
+
 func (e *emojiHandler) Handle(rw http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
+		e.logger.Info("Method not allowed", "method", r.Method)
 		rw.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	var u *url.URL
-	var err error
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		e.logger.Info("No body for POST")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-	if u, err = validateURL(r); err != nil {
+	var u *url.URL
+
+	if u, err = validateURL(data); err != nil {
 		e.logger.Error("Unable to process URI", "error", err)
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -48,8 +59,8 @@ func (e *emojiHandler) Handle(rw http.ResponseWriter, r *http.Request) {
 
 	if ok {
 		e.logger.Info("Successfully returned image from cache", "URI", u.String())
-		rw.WriteHeader(http.StatusNotModified)
-		rw.Write([]byte(u.String()))
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte(base64.StdEncoding.EncodeToString([]byte(u.String()))))
 		return
 	}
 
@@ -82,31 +93,32 @@ func (e *emojiHandler) Handle(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filename := uuid.New().String() + ".png"
-	e.logger.Info("Successfully processed image", "file", filename)
+	e.logger.Info("Successfully processed image", "file", u.String())
 
 	// save the image
-	data := []byte{}
-	out := bytes.NewBuffer(data)
-	png.Encode(out, i)
+	out := new(bytes.Buffer)
 
-	// save the cache
-	err = e.cache.Put(u.String(), data)
+	err = png.Encode(out, i)
 	if err != nil {
-		e.logger.Error("Unable to cache image", "file", filename, "error", err)
+		e.logger.Error("Unable to encode file as png", "file", u.String(), "error", err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	rw.Write([]byte(u.String()))
-}
-
-func validateURL(r *http.Request) (*url.URL, error) {
-	data, err := ioutil.ReadAll(r.Body)
+	// save the cache
+	err = e.cache.Put(u.String(), out.Bytes())
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read body")
+		e.logger.Error("Unable to cache image", "file", u.String(), "error", err)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
+	e.logger.Info("Written file to cache", "file", u.String(), "error", err, "data", out.Bytes())
+
+	rw.Write([]byte(base64.StdEncoding.EncodeToString([]byte(u.String()))))
+}
+
+func validateURL(data []byte) (*url.URL, error) {
 	valid := govalidator.IsRequestURL(string(data))
 	if valid == false {
 		return nil, fmt.Errorf("%v is not a valid URL", string(data))

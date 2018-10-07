@@ -1,6 +1,7 @@
 package emojify
 
 import (
+	"encoding/base64"
 	"io/ioutil"
 	"os"
 	"time"
@@ -65,10 +66,10 @@ func NewFileCache(path string) Cache {
 func (r *FileCache) Exists(key string) (bool, error) {
 	_, err := os.Open(r.path + sanitiseKey(key))
 	if os.IsNotExist(err) {
-		return true, nil
+		return false, nil
 	}
 
-	return false, err
+	return true, err
 }
 
 // Get an image from the File store
@@ -95,5 +96,5 @@ func (r *FileCache) Put(key string, data []byte) error {
 
 // encodes the key replacing any non-suitable characters
 func sanitiseKey(key string) string {
-	return key
+	return base64.StdEncoding.EncodeToString([]byte(key))
 }

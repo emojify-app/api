@@ -10,4 +10,4 @@ COPY ./images /service/images/
 
 WORKDIR /service
 
-CMD /service/emojify-api
+ENTRYPOINT /service/emojify-api
