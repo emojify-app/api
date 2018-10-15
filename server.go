@@ -25,12 +25,13 @@ var redisPassword = flag.String("redis-password", "", "Password for redis server
 var allowedOrigin = flag.String("allow-origin", "*", "CORS origin")
 var authNServer = flag.String("authn-server", "http://localhost:3000", "AuthN server location")
 var audience = flag.String("authn-audience", "emojify", "AuthN audience")
+var bindAddress = flag.String("bind-address", "localhost:9090", "Bind address for the server defaults to localhost:9090")
 
 func main() {
 	flag.Parse()
 
 	logger := hclog.Default()
-	logger.Info("Started API Server", "version", "0.5.1")
+	logger.Info("Started API Server", "version", "0.5.3")
 	logger.Info("Setting allowed origin for CORS", "origin", *allowedOrigin)
 
 	var cache emojify.Cache
@@ -67,8 +68,8 @@ func main() {
 	})
 	handler := c.Handler(mux)
 
-	logger.Info("Starting server on port 9090")
+	logger.Info("Starting server on ", *bindAddress)
 
-	err = http.ListenAndServe(":9090", handler)
+	err = http.ListenAndServe(*bindAddress, handler)
 	log.Fatal(err)
 }

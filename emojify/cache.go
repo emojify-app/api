@@ -1,10 +1,13 @@
 package emojify
 
 import (
-	"encoding/base64"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"crypto/md5"
 
 	"github.com/go-redis/redis"
 )
@@ -25,6 +28,14 @@ type RedisCache struct {
 	expiration time.Duration
 }
 
+// HashFilename creates a md5 hash of the given filename
+func HashFilename(f string) string {
+	h := md5.New()
+	io.WriteString(h, f)
+
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
 // NewRedisCache creates a new RedisCache with the given connection string
 func NewRedisCache(connection string) Cache {
 	client := redis.NewClient(&redis.Options{
@@ -38,7 +49,7 @@ func NewRedisCache(connection string) Cache {
 
 // Exists checks to see if a key exists in the cache
 func (r *RedisCache) Exists(key string) (bool, error) {
-	c, err := r.client.Exists(sanitiseKey(key)).Result()
+	c, err := r.client.Exists(key).Result()
 	return (c > 0), err
 }
 
@@ -64,7 +75,7 @@ func NewFileCache(path string) Cache {
 
 // Exists checks to see if a file
 func (r *FileCache) Exists(key string) (bool, error) {
-	_, err := os.Open(r.path + sanitiseKey(key))
+	_, err := os.Open(r.path + key)
 	if os.IsNotExist(err) {
 		return false, nil
 	}
@@ -74,7 +85,7 @@ func (r *FileCache) Exists(key string) (bool, error) {
 
 // Get an image from the File store
 func (r *FileCache) Get(key string) ([]byte, error) {
-	f, err := os.Open(r.path + sanitiseKey(key))
+	f, err := os.Open(r.path + key)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +95,7 @@ func (r *FileCache) Get(key string) ([]byte, error) {
 
 // Put an image to the File store
 func (r *FileCache) Put(key string, data []byte) error {
-	f, err := os.Create(r.path + sanitiseKey(key))
+	f, err := os.Create(r.path + key)
 	if err != nil {
 		return err
 	}
@@ -92,9 +103,4 @@ func (r *FileCache) Put(key string, data []byte) error {
 	_, err = f.Write(data)
 
 	return err
-}
-
-// encodes the key replacing any non-suitable characters
-func sanitiseKey(key string) string {
-	return base64.StdEncoding.EncodeToString([]byte(key))
 }

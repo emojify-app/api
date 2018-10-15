@@ -35,6 +35,14 @@
   version = "v6.14.1"
 
 [[projects]]
+  digest = "1:5247b135b5492aa232a731acdcb52b08f32b874cb398f21ab460396eadbe866b"
+  name = "github.com/google/uuid"
+  packages = ["."]
+  pruneopts = ""
+  revision = "d460ce9f8df2e77fb1ba55ca87fafed96c607494"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   digest = "1:7aff20224332c77b550f849f70e9e377f13578781febf4d409a441876de0999a"
   name = "github.com/hashicorp/go-hclog"
@@ -151,6 +159,7 @@
   input-imports = [
     "github.com/asaskevich/govalidator",
     "github.com/go-redis/redis",
+    "github.com/google/uuid",
     "github.com/hashicorp/go-hclog",
     "github.com/keratin/authn-go/authn",
     "github.com/machinebox/sdk-go/facebox",
