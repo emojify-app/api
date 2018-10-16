@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"strings"
+
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/nicholasjackson/emojify-api/emojify"
 	"github.com/rs/cors"
@@ -26,6 +28,7 @@ var allowedOrigin = flag.String("allow-origin", "*", "CORS origin")
 var authNServer = flag.String("authn-server", "http://localhost:3000", "AuthN server location")
 var audience = flag.String("authn-audience", "emojify", "AuthN audience")
 var bindAddress = flag.String("bind-address", "localhost:9090", "Bind address for the server defaults to localhost:9090")
+var path = flag.String("path", "/", "Path to mount API, defaults to /")
 
 func main() {
 	flag.Parse()
@@ -53,10 +56,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// update the path
+	if !strings.HasSuffix(*path, "/") {
+		*path = *path + "/"
+	}
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", ah.Handle)
-	mux.HandleFunc("/health", hh.Handle)
-	mux.HandleFunc("/cache", ch.Handle)
+	mux.HandleFunc(*path, ah.Handle)
+	mux.HandleFunc(*path+"health", hh.Handle)
+	mux.HandleFunc(*path+"cache", ch.Handle)
 
 	// setup CORS
 	c := cors.New(cors.Options{
