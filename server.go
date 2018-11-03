@@ -2,88 +2,81 @@ package main
 
 import (
 	"flag"
-	"log"
-	"net/http"
-	"time"
-
-	"strings"
-
-	hclog "github.com/hashicorp/go-hclog"
-	"github.com/nicholasjackson/emojify-api/emojify"
-	"github.com/rs/cors"
-
+	"fmt"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"net/http"
+	"os"
+	"time"
+
+	hclog "github.com/hashicorp/go-hclog"
+	"github.com/nicholasjackson/env"
 )
 
 func init() {
 	http.DefaultClient.Timeout = 3000 * time.Millisecond
 }
 
-var cacheType = flag.String("cache-type", "file", "Cache type, redis/file")
-var redisLocation = flag.String("redis-location", "localhost:1234", "Location for the redis server")
-var redisPassword = flag.String("redis-password", "", "Password for redis server")
-var allowedOrigin = flag.String("allow-origin", "*", "CORS origin")
-var authNServer = flag.String("authn-server", "http://localhost:3000", "AuthN server location")
-var audience = flag.String("authn-audience", "emojify", "AuthN audience")
-var disableAuth = flag.Bool("authn-disable", false, "Disable authn integration")
-var bindAddress = flag.String("bind-address", "localhost:9090", "Bind address for the server defaults to localhost:9090")
-var path = flag.String("path", "/", "Path to mount API, defaults to /")
-var cacheAddress = flag.String("cache-address", "localhost", "Address for the Cache service")
-var paymentGatewayURI = flag.String("payment-address", "localhost", "Address for the Payment gateway service")
+var version = "0.6.0"
+
+var help = flag.Bool("help", false, "--help to show help")
+
+var bindAddress = env.String("BIND_ADDRESS", false, "localhost:9090", "Bind address for the server defaults to localhost:9090")
+var allowedOrigin = env.String("ALLOW_ORIGIN", false, "*", "CORS origin")
+var cacheAddress = env.String("CACHE_URI", false, "localhost", "Address for the Cache service")
+var paymentGatewayURI = env.String("PAYMENT_URI", false, "localhost", "Address for the Payment gateway service")
+var authNServer = env.String("AUTHN_URI", false, "http://localhost:3000", "AuthN server location")
+var audience = env.String("AUTHN_URI_AUDIENCE", false, "emojify", "AuthN audience")
+var disableAuth = env.Bool("AUTHN_DISABLE", false, false, "Disable authn integration")
 
 func main() {
 	flag.Parse()
 
+	// if the help flag is passed show configuration options
+	if *help == true {
+		fmt.Println("API service version:", version)
+		fmt.Println("Configuration values are set using environment variables, for info please see the following list")
+		fmt.Println("")
+		fmt.Println(env.Help())
+	}
+
+	// Parse the environment variables and exit on error
+	err := env.Parse()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	logger := hclog.Default()
-	logger.Info("Started API Server", "version", "0.5.4")
+	logger.Info("Started API Server", "version", version)
 	logger.Info("Setting allowed origin for CORS", "origin", *allowedOrigin)
 
+	//setupRouter()
+}
+
+/*
+func setupRouter() mux.Router {
+
 	mux := http.NewServeMux()
-	// update the path
-	if !strings.HasSuffix(*path, "/") {
-		*path = *path + "/"
-	}
-
-	var cache emojify.Cache
-	if *cacheType == "redis" {
-		cache = emojify.NewRedisCache(*redisLocation)
-	} else {
-		cache = emojify.NewFileCache("./cache/")
-	}
-
-	f := &emojify.FetcherImpl{}
-	e := emojify.NewEmojify(f, "./images/")
-
-	ch := CacheHandler{logger: logger.Named("cacheHandler"), cache: cache}
-	mux.HandleFunc(*path+"cache", ch.Handle)
 
 	hh := healthHandler{}
-	mux.HandleFunc(*path+"health", hh.Handle)
+	mux.HandleFunc("/health", hh.Handle)
 
-	eh := emojiHandler{fetcher: f, emojifyer: e, logger: logger.Named("emojiHandler"), cache: cache}
+	//eh := emojiHandler{fetcher: f, emojifyer: e, logger: logger.Named("emojiHandler"), cache: cache}
 	ph := paymentHandler{logger: logger.Named("paymentHandler"), paymentGatewayURI: *paymentGatewayURI}
 
 	// If auth is disabled do not use JWT auth
 	if *disableAuth {
-		mux.HandleFunc(*path, eh.Handle)
-		mux.HandleFunc(*path+"payments", ph.ServeHTTP)
+		mux.HandleFunc("/payments", ph.ServeHTTP)
 	} else {
-		ah, err := NewJWTAuthMiddleware(*authNServer, *audience, logger, eh)
-		if err != nil {
-			logger.Error("Unable to create JWT Auth Middleware", "error", err)
-			log.Fatal(err)
-		}
-
 		ph, err := NewJWTAuthMiddleware(*authNServer, *audience, logger, ph)
 		if err != nil {
 			logger.Error("Unable to create JWT Auth Middleware", "error", err)
 			log.Fatal(err)
 		}
 
-		mux.HandleFunc(*path, ah.Handle)
-		mux.HandleFunc(*path+"payments", ph.Handle)
+		mux.HandleFunc("/payments", ph.Handle)
 	}
 
 	// setup CORS
@@ -101,3 +94,10 @@ func main() {
 	err := http.ListenAndServe(*bindAddress, handler)
 	log.Fatal(err)
 }
+
+func createDependencies() (hclog.Logger, emojify.Emojify) {
+	logger := hclog.Default()
+
+	return logger, e
+}
+*/

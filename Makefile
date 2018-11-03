@@ -1,6 +1,9 @@
 build_server:
 	CGO_ENABLED=0 GOOS=linux go build -o emojify-api
 
+test:
+	go test ./...
+
 docker_server: build_server
 	docker build -t nicholasjackson/emojify-api .
 

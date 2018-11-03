@@ -14,9 +14,12 @@ require (
 	github.com/go-redis/redis v6.14.1+incompatible
 	github.com/google/shlex v0.0.0-20150127133951-6f45313302b9 // indirect
 	github.com/google/uuid v1.0.0
+	github.com/gorilla/mux v1.6.2
+	github.com/graphql-go/graphql v0.7.6
 	github.com/hashicorp/go-hclog v0.0.0-20180910232447-e45cbeb79f04
 	github.com/josharian/impl v0.0.0-20180228163738-3d0f908298c4 // indirect
 	github.com/jstemmer/gotags v1.4.1 // indirect
+	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/keratin/authn-go v0.0.0-20180305155151-8ffae7b75297
 	github.com/kisielk/errcheck v1.1.0 // indirect
 	github.com/klauspost/asmfmt v0.0.0-20171230121622-022c51c61cbd // indirect
@@ -24,7 +27,9 @@ require (
 	github.com/machinebox/sdk-go v0.3.0
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mdempsky/gocode v0.0.0-20181016185935-22f3bf7a9256 // indirect
+	github.com/mdwhatcott/spin v0.0.0-20170817185212-7083b4c1eb7f // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/nicholasjackson/env v0.0.0-20181027163906-d396ca9cf84b
 	github.com/nicksnyder/go-i18n v1.10.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.2.0 // indirect
@@ -34,6 +39,9 @@ require (
 	github.com/rogpeppe/godef v1.0.0 // indirect
 	github.com/rs/cors v1.5.0
 	github.com/sirupsen/logrus v1.1.1 // indirect
+	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
+	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a // indirect
+	github.com/smartystreets/scantest v0.0.0-20180128035545-6b06c89d3dfd // indirect
 	github.com/spf13/cobra v0.0.3 // indirect
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/stretchr/objx v0.1.1
