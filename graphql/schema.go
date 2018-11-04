@@ -1,21 +1,16 @@
 package graphql
 
-import gographql "github.com/graphql-go/graphql"
+import (
+	"github.com/emojify-app/api/logging"
+	gographql "github.com/graphql-go/graphql"
+)
 
 // NewSchema returns a new
-func NewSchema() (gographql.Schema, error) {
+func NewSchema(l logging.Logger) (gographql.Schema, error) {
 	return gographql.NewSchema(
 		gographql.SchemaConfig{
-			Query:    NewGetQuery(getResolver),
-			Mutation: NewCreateMutation(createResolver),
+			Query:    NewGetQuery(getResolver(l)),
+			Mutation: NewCreateMutation(createResolver(l)),
 		},
 	)
-}
-
-func createResolver(p gographql.ResolveParams) (interface{}, error) {
-	return imageType, nil
-}
-
-func getResolver(p gographql.ResolveParams) (interface{}, error) {
-	return nil, nil
 }
