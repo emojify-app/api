@@ -7,18 +7,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewCreatesQueryWithNameCreate(t *testing.T) {
-	q := NewCreateQuery(func(q gographql.ResolveParams) (interface{}, error) {
+func TestNewCreatesMutationWithNameCreate(t *testing.T) {
+	q := NewCreateMutation(func(q gographql.ResolveParams) (interface{}, error) {
 		return nil, nil
 	})
 
-	assert.Equal(t, "Create", q.Name())
+	assert.Equal(t, "RootMutation", q.Name())
 }
 
-func TestNewCreatesQueryWithFieldURL(t *testing.T) {
-	q := NewCreateQuery(func(q gographql.ResolveParams) (interface{}, error) {
+func TestNewCreatesMutationWithArgumentURL(t *testing.T) {
+	q := NewCreateMutation(func(q gographql.ResolveParams) (interface{}, error) {
 		return nil, nil
 	})
 
-	assert.Equal(t, gographql.String, q.Fields()["url"].Type)
+	assert.Equal(t, imageType, q.Fields()["createImage"].Type)
 }
