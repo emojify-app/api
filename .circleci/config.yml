@@ -24,11 +24,8 @@ jobs:
          name: docker login
          command: docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
       - run: 
-          name: install goreleaser
-          command: curl -sL https://git.io/goreleaser | bash
-      - run: 
           name: deploy application
-          command: goreleaser --snapshot
+          command: curl -sL https://git.io/goreleaser | bash
 
 workflows:
   version: 2
