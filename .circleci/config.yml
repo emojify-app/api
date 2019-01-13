@@ -8,5 +8,47 @@ jobs:
     working_directory: /go/src/github.com/emojify-app/api
     steps:
       - checkout
-      - run: go get -v -t -d ./...
-      - run: gorelaser --rm-dist --snapshot
+      - run: GO_ENABLED=0 GOOS=linux go build -o emojify-api
+  release:
+    docker:
+      - image: circleci/golang:1.11.4
+    environment:
+      GO111MODULE: "on"
+    working_directory: /go/src/github.com/emojify-app/api
+    steps:
+      - checkout
+      - run:
+        name: install goreleaser
+          command: |
+            if [[ -n ${CIRCLE_TAG} ]]; then
+              curl -sL https://git.io/goreleaser | bash
+            fi
+      - run: goreleaser
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              ignore: /^[0-9]+(\.[0-9]+)*/
+
+  build-and-release:
+    jobs:
+      - build:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*/
+      - release:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^[0-9]+(\.[0-9]+)*/
