@@ -1,0 +1,22 @@
+---
+builds:
+- binary: emojify-api
+  goos:
+  - linux
+  goarch:
+  - amd64
+  env:
+  - CGO_ENABLED=0
+
+dockers:
+-
+  binary: emojify-api
+  goos: linux
+  goarch: amd64
+  dockerfile: Dockerfile
+  image_templates:
+  - "nicholasjackson/emojify-api:latest"
+  - "nicholasjackson/emojify-api:{{.Tag}}"
+  - "nicholasjackson/emojify-api:{{.Commit}}"
+  extra_files:
+    - images
