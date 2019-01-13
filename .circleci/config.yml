@@ -32,7 +32,7 @@ workflows:
   version: 2
   build:
     jobs:
-      - build:
+      - build
   build-and-release:
     jobs:
       - build:
