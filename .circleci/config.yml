@@ -17,13 +17,8 @@ jobs:
     working_directory: /go/src/github.com/emojify-app/api
     steps:
       - checkout
-      - run: docker login --help
-      - run:
-          name: install goreleaser
-          command: |
-            if [[ -n ${CIRCLE_TAG} ]]; then
-              curl -sL https://git.io/goreleaser | bash
-            fi
+      - run: docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}
+      - run: curl -sL https://git.io/goreleaser | bash
       - run: goreleaser --snapshot
 
 workflows:
