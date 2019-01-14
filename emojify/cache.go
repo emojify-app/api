@@ -86,6 +86,10 @@ func (r *FileCache) Exists(key string) (bool, error) {
 // Get an image from the File store
 func (r *FileCache) Get(key string) ([]byte, error) {
 	f, err := os.Open(r.path + key)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}

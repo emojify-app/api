@@ -11,6 +11,9 @@ jobs:
       - run: 
           name: build application
           command: GO_ENABLED=0 GOOS=linux go build -o emojify-api
+      - run: 
+          name: test application
+          command: go test -v --race ./...
   release:
     docker:
       - image: circleci/golang:1.11.4

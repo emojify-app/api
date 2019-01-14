@@ -1,41 +1,40 @@
-package main
+package handlers
 
 import (
 	"bytes"
 	"fmt"
-	_ "image/jpeg"
+	_ "image/jpeg" // import image
 	"image/png"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
 	"github.com/asaskevich/govalidator"
-	hclog "github.com/hashicorp/go-hclog"
-	"github.com/nicholasjackson/emojify-api/emojify"
+	"github.com/emojify-app/api/emojify"
+	"github.com/emojify-app/api/logging"
 )
 
-type emojiHandler struct {
+// Emojify is a http.Handler for Emojifying images
+type Emojify struct {
 	emojifyer emojify.Emojify
 	fetcher   emojify.Fetcher
-	logger    hclog.Logger
+	logger    logging.Logger
 	cache     emojify.Cache
 }
 
-func (e emojiHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	e.Handle(rw, r)
+// NewEmojify returns a new instance of the Emojify handler
+func NewEmojify(e emojify.Emojify, f emojify.Fetcher, l logging.Logger, c emojify.Cache) *Emojify {
+	return &Emojify{e, f, l, c}
 }
 
-func (e *emojiHandler) Handle(rw http.ResponseWriter, r *http.Request) {
-
-	if r.Method != "POST" {
-		e.logger.Info("Method not allowed", "method", r.Method)
-		rw.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+// ServeHTTP implements the handler function
+func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	done := e.logger.EmojifyHandlerCalled(r)
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		e.logger.Info("No body for POST")
+		e.logger.EmojifyHandlerNoPostBody()
+
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -43,80 +42,104 @@ func (e *emojiHandler) Handle(rw http.ResponseWriter, r *http.Request) {
 	var u *url.URL
 
 	if u, err = validateURL(data); err != nil {
-		e.logger.Error("Unable to validate URI", "error", err)
+		e.logger.EmojifyHandlerInvalidURL(string(data), err)
+		done(http.StatusBadRequest, nil)
+
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	key := emojify.HashFilename(u.String())
 
-	e.logger.Info("Checking cache", "key", key)
+	ccDone := e.logger.EmojifyHandlerCacheCheck(key)
 	ok, err := e.cache.Exists(key)
 	if err != nil {
-		e.logger.Error("Unable to check cache", "error", err)
+		ccDone(http.StatusInternalServerError, err)
+		done(http.StatusInternalServerError, nil)
+
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if ok {
-		e.logger.Info("Successfully returned image from cache", "key", key)
+		// cache found message
+		ccDone(http.StatusOK, nil)
+		done(http.StatusOK, nil)
+
 		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte(key))
 		return
 	}
 
-	e.logger.Info("Fetching image", "URI", u.String())
+	// log cache file not found
+	ccDone(http.StatusNotFound, nil)
+
+	fiDone := e.logger.EmojifyHandlerFetchImage(u.String())
 	f, err := e.fetcher.FetchImage(u.String())
 	if err != nil {
-		e.logger.Error("Unable to fetch image", "error", err, "URI", u.String())
+		fiDone(http.StatusInternalServerError, err)
+		done(http.StatusInternalServerError, nil)
+
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fiDone(http.StatusOK, nil)
 
 	img, err := e.fetcher.ReaderToImage(f)
 	if err != nil {
-		e.logger.Error("invalid image format", "error", err, "URI", u.String())
+		e.logger.EmojifyHandlerInvalidImage(u.String(), err)
+		done(http.StatusInternalServerError, nil)
+
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	ffDone := e.logger.EmojifyHandlerFindFaces(u.String())
 	faces, err := e.emojifyer.GetFaces(f)
 	if err != nil {
-		e.logger.Error("Unable to find faces", "error", err, "URI", u.String())
+		ffDone(http.StatusInternalServerError, err)
+		done(http.StatusInternalServerError, nil)
+
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	ffDone(http.StatusOK, nil)
 
+	emDone := e.logger.EmojifyHandlerEmojify(u.String())
 	i, err := e.emojifyer.Emojimise(img, faces)
 	if err != nil {
-		e.logger.Error("Unable to emojify", "error", err, "URI", u.String())
+		emDone(http.StatusInternalServerError, err)
+		done(http.StatusInternalServerError, nil)
+
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	e.logger.Info("Successfully processed image", "URI", u.String())
+	emDone(http.StatusOK, nil)
 
 	// save the image
 	out := new(bytes.Buffer)
-
 	err = png.Encode(out, i)
 	if err != nil {
-		e.logger.Error("Unable to encode file as png", "URI", u.String(), "error", err)
+		e.logger.EmojifyHandlerImageEncodeError(u.String(), err)
+
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// save the cache
+	cpDone := e.logger.EmojifyHandlerCachePut(u.String())
 	err = e.cache.Put(key, out.Bytes())
 	if err != nil {
-		e.logger.Error("Unable to cache image", "URI", u.String(), "key", key, "error", err)
+		cpDone(http.StatusInternalServerError, err)
+		done(http.StatusInternalServerError, nil)
+
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	e.logger.Info("Written file to cache", "URI", u.String(), "key", key, "error", err)
+	cpDone(http.StatusOK, nil)
 
 	rw.Write([]byte(key))
+	done(http.StatusOK, nil)
 }
 
 func validateURL(data []byte) (*url.URL, error) {
