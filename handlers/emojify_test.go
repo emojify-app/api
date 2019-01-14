@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"bytes"
@@ -11,9 +11,9 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/emojify-app/api/emojify"
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/machinebox/sdk-go/facebox"
-	"github.com/nicholasjackson/emojify-api/emojify"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

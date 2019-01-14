@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"fmt"
@@ -43,7 +43,7 @@ func setupAuthMiddleware() (*httptest.ResponseRecorder, *http.Request, *JWTAuthM
 func TestNoJWTReturns401(t *testing.T) {
 	rw, r, h := setupAuthMiddleware()
 
-	h.Handle(rw, r)
+	h.ServeHTTP(rw, r)
 
 	assert.Equal(t, http.StatusUnauthorized, rw.Code)
 }
@@ -52,7 +52,7 @@ func TestAuthHeaderNotJWTReturns401(t *testing.T) {
 	rw, r, h := setupAuthMiddleware()
 	r.Header.Add("Authorization", "basic abc:123")
 
-	h.Handle(rw, r)
+	h.ServeHTTP(rw, r)
 
 	assert.Equal(t, http.StatusUnauthorized, rw.Code)
 }
@@ -62,7 +62,7 @@ func TestInvalidJWTReturns401(t *testing.T) {
 	dummyError = fmt.Errorf("Invalid JWT")
 	r.Header.Add("Authorization", "jwt abc:123")
 
-	h.Handle(rw, r)
+	h.ServeHTTP(rw, r)
 
 	assert.Equal(t, http.StatusUnauthorized, rw.Code)
 }
@@ -71,7 +71,7 @@ func TestValidJWTCallsNext(t *testing.T) {
 	rw, r, h := setupAuthMiddleware()
 	r.Header.Add("Authorization", "jwt abc:123")
 
-	h.Handle(rw, r)
+	h.ServeHTTP(rw, r)
 
 	assert.Equal(t, http.StatusOK, rw.Code)
 	assert.True(t, dummyNextCalled)
