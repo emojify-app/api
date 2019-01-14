@@ -45,6 +45,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
 	logger.ServiceStart("localhost", "9090")
 	logger.Log().Info(
 		"Startup parameters",
@@ -75,7 +76,7 @@ func main() {
 	ch := handlers.NewCache(logger, cache)
 	router.Handle("/cache", ch).Methods("GET")
 
-	hh := &handlers.Health{}
+	hh := handlers.NewHealth(logger)
 	router.Handle("/health", hh).Methods("GET")
 
 	eh := handlers.NewEmojify(e, f, logger, cache)
