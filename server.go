@@ -46,6 +46,12 @@ func main() {
 		os.Exit(1)
 	}
 	logger.ServiceStart("localhost", "9090")
+	logger.Log().Info(
+		"Startup parameters",
+		"cache_type", *cacheType,
+		"statsDServer", *statsDServer,
+		"allowedOrigin", *allowedOrigin,
+	)
 
 	r := mux.NewRouter()
 	// update the path
@@ -97,8 +103,6 @@ func main() {
 		Debug: false,
 	})
 	handler := c.Handler(r)
-
-	logger.Log().Info("Starting server on ", *bindAddress)
 
 	err = http.ListenAndServe(*bindAddress, handler)
 	logger.Log().Error("Unable to start server", "error", err)
