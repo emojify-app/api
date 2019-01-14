@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -55,7 +54,7 @@ func main() {
 	}
 
 	authRouter := r.PathPrefix(*path).Subrouter()
-	router = r.PathPrefix(*path).Subrouter()
+	router := r.PathPrefix(*path).Subrouter()
 
 	var cache emojify.Cache
 	if *cacheType == "redis" {
@@ -73,14 +72,14 @@ func main() {
 	hh := &handlers.Health{}
 	router.Handle("/health", hh).Methods("GET")
 
-	eh := handlers.NewEmojify(f, e, logger, cache)
-		authRouter.Handle("/", eh).Methods("POST")
+	eh := handlers.NewEmojify(e, f, logger, cache)
+	authRouter.Handle("/", eh).Methods("POST")
 	//ph := paymentHandler{logger: logger.Named("paymentHandler"), paymentGatewayURI: *paymentGatewayURI}
-//mux.HandleFunc(*path+"payments", ph.ServeHTTP)
+	//mux.HandleFunc(*path+"payments", ph.ServeHTTP)
 
 	// If auth is disabled do not use JWT auth
 	if !*disableAuth {
-		m, err := NewJWTAuthMiddleware(*authNServer, *audience, logger, eh)
+		m, err := handlers.NewJWTAuthMiddleware(*authNServer, *audience, logger.Log(), eh)
 		if err != nil {
 			logger.Log().Error("Unable to create JWT Auth Middleware", "error", err)
 			os.Exit(1)
@@ -99,8 +98,8 @@ func main() {
 	})
 	handler := c.Handler(r)
 
-	logger.Info("Starting server on ", *bindAddress)
+	logger.Log().Info("Starting server on ", *bindAddress)
 
-	err := http.ListenAndServe(*bindAddress, handler)
-	log.Fatal(err)
+	err = http.ListenAndServe(*bindAddress, handler)
+	logger.Log().Error("Unable to start server", "error", err)
 }

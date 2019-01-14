@@ -42,7 +42,7 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	var u *url.URL
 
 	if u, err = validateURL(data); err != nil {
-		e.logger.EmojifyHandlerInvalidURL(u.String(), err)
+		e.logger.EmojifyHandlerInvalidURL(string(data), err)
 		done(http.StatusBadRequest, nil)
 
 		http.Error(rw, err.Error(), http.StatusBadRequest)
@@ -64,6 +64,8 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if ok {
 		// cache found message
 		ccDone(http.StatusOK, nil)
+		done(http.StatusOK, nil)
+
 		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte(key))
 		return

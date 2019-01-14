@@ -7,18 +7,18 @@ import (
 	"github.com/emojify-app/api/logging"
 )
 
-// CacheHandler returns images from the cache
+// Cache returns images from the cache
 type Cache struct {
 	logger logging.Logger
 	cache  emojify.Cache
 }
 
-// NewCacheHandler creates a new http.Handler for dealing with cache requests
+// NewCache creates a new http.Handler for dealing with cache requests
 func NewCache(l logging.Logger, c emojify.Cache) *Cache {
 	return &Cache{l, c}
 }
 
-// Handle handles requests for cache
+// ServeHTTP handles requests for cache
 func (c *Cache) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	done := c.logger.CacheHandlerCalled(r)
 
@@ -27,6 +27,7 @@ func (c *Cache) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if f == "" {
 		c.logger.CacheHandlerBadRequest()
 		done(http.StatusBadRequest, nil)
+
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -38,10 +39,19 @@ func (c *Cache) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		cgd(http.StatusInternalServerError, err)
 		done(http.StatusNotFound, nil)
 
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if d == nil || len(d) == 0 {
+		cgd(http.StatusNotFound, nil)
+		done(http.StatusNotFound, nil)
+
 		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
-	cgd(http.StatusNotFound, nil)
+
+	cgd(http.StatusOK, nil)
 
 	fileType := http.DetectContentType(d)
 

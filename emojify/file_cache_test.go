@@ -15,9 +15,8 @@ func setupFileCache() Cache {
 
 func TestPutSavesFile(t *testing.T) {
 	c := setupFileCache()
-
-	c.Put("abc", []byte("abc1223"))
 	fileKey := base64.StdEncoding.EncodeToString([]byte("abc"))
+	c.Put(fileKey, []byte("abc1223"))
 
 	file, err := os.Open("/tmp/" + fileKey)
 	if err != nil {

@@ -26,7 +26,7 @@ func dummyValidate(jwt string) (string, error) {
 	return "", dummyError
 }
 
-func setupAuthMiddleware() (*httptest.ResponseRecorder, *http.Request, *JWTAuthMiddleware) {
+func setupAuthMiddleware() (*httptest.ResponseRecorder, *http.Request, http.Handler) {
 	logger := hclog.Default()
 	dummyParameters = ""
 	dummyError = nil
@@ -35,9 +35,9 @@ func setupAuthMiddleware() (*httptest.ResponseRecorder, *http.Request, *JWTAuthM
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/", nil)
 
-	h := &JWTAuthMiddleware{logger, &dummyHandler{}, dummyValidate}
+	jwt := &JWTAuthMiddleware{logger, dummyValidate}
 
-	return rw, r, h
+	return rw, r, jwt.Middleware(&dummyHandler{})
 }
 
 func TestNoJWTReturns401(t *testing.T) {

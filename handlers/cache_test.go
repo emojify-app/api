@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -32,18 +31,9 @@ func setupCacheHandler() (*httptest.ResponseRecorder, *http.Request, *Cache) {
 	return rw, r, h
 }
 
-func TestReturns405WhenNotGet(t *testing.T) {
-	rw, _, h := setupCacheHandler()
-	r := httptest.NewRequest("POST", "/", nil)
-
-	h.ServeHTTP(rw, r)
-
-	assert.Equal(t, http.StatusMethodNotAllowed, rw.Code)
-}
-
 func TestReturns400WhenInvalidFileParameter(t *testing.T) {
 	rw, _, h := setupCacheHandler()
-	r := httptest.NewRequest("GET", "/cache?file=something", nil)
+	r := httptest.NewRequest("GET", "/cache", nil)
 
 	h.ServeHTTP(rw, r)
 
@@ -52,7 +42,7 @@ func TestReturns400WhenInvalidFileParameter(t *testing.T) {
 
 func TestReturns404WhenNoImageFoundInCache(t *testing.T) {
 	rw, r, h := setupCacheHandler()
-	mockCache.On("Get", fileURL).Return([]byte{}, fmt.Errorf("Not found"))
+	mockCache.On("Get", base64URL).Return([]byte{}, nil)
 	h.ServeHTTP(rw, r)
 
 	assert.Equal(t, http.StatusNotFound, rw.Code)
@@ -60,7 +50,7 @@ func TestReturns404WhenNoImageFoundInCache(t *testing.T) {
 
 func TestReturns200WhenImageFound(t *testing.T) {
 	rw, r, h := setupCacheHandler()
-	mockCache.On("Get", fileURL).Return([]byte("abc"), nil)
+	mockCache.On("Get", base64URL).Return([]byte("abc"), nil)
 
 	h.ServeHTTP(rw, r)
 
