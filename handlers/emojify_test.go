@@ -26,7 +26,7 @@ func setupEmojiHandler() (*httptest.ResponseRecorder, *http.Request, *Emojify) {
 	mockFetcher = emojify.MockFetcher{}
 	mockEmojifyer = emojify.MockEmojify{}
 	mockCache = emojify.MockCache{}
-	logger, _ := logging.New("test", "localhost:8125", "DEBUG")
+	logger, _ := logging.New("test", "localhost:8125", "DEBUG", "text")
 
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/", nil)

@@ -12,7 +12,7 @@ import (
 func TestHealthHandlerReturnsOK(t *testing.T) {
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/health", nil)
-	l, _ := logging.New("test", "localhost:8125", "DEBUG")
+	l, _ := logging.New("test", "localhost:8125", "DEBUG", "text")
 
 	h := Health{l}
 	h.ServeHTTP(rw, r)
@@ -23,7 +23,7 @@ func TestHealthHandlerReturnsOK(t *testing.T) {
 func TestHealthHandlerReturns200(t *testing.T) {
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/health", nil)
-	l, _ := logging.New("test", "localhost:8125", "DEBUG")
+	l, _ := logging.New("test", "localhost:8125", "DEBUG", "text")
 
 	h := Health{l}
 	h.ServeHTTP(rw, r)

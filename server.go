@@ -36,11 +36,12 @@ var bindAddress = flag.String("bind-address", "localhost:9090", "Bind address fo
 var path = flag.String("path", "/", "Path to mount API, defaults to /")
 var cacheAddress = flag.String("cache-address", "localhost", "Address for the Cache service")
 var paymentGatewayURI = flag.String("payment-address", "localhost", "Address for the Payment gateway service")
+var logFormat = flag.String("log_format", "text", "Log output format [text,json]")
 
 func main() {
 	flag.Parse()
 
-	logger, err := logging.New("api", *statsDServer, "DEBUG")
+	logger, err := logging.New("api", *statsDServer, "DEBUG", *logFormat)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
