@@ -17,7 +17,7 @@ var base64URL string
 func setupCacheHandler() (*httptest.ResponseRecorder, *http.Request, *Cache) {
 	mockCache = emojify.MockCache{}
 	base64URL = base64.StdEncoding.EncodeToString([]byte(fileURL))
-	logger, _ := logging.New("test", "localhost:8125", "DEBUG", "text")
+	logger, _ := logging.New("test", "test", "localhost:8125", "DEBUG", "text")
 
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest(

@@ -24,6 +24,8 @@ func init() {
 	http.DefaultClient.Timeout = 3000 * time.Millisecond
 }
 
+var version = "dev"
+
 var cacheType = flag.String("cache-type", "file", "Cache type, redis/file")
 var redisLocation = flag.String("redis-location", "localhost:1234", "Location for the redis server")
 var redisPassword = flag.String("redis-password", "", "Password for redis server")
@@ -41,13 +43,13 @@ var logFormat = flag.String("log_format", "text", "Log output format [text,json]
 func main() {
 	flag.Parse()
 
-	logger, err := logging.New("api", *statsDServer, "DEBUG", *logFormat)
+	logger, err := logging.New("api", version, *statsDServer, "DEBUG", *logFormat)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	logger.ServiceStart("localhost", "9090")
+	logger.ServiceStart("localhost", "9090", version)
 	logger.Log().Info(
 		"Startup parameters",
 		"cache_type", *cacheType,

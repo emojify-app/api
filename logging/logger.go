@@ -13,7 +13,7 @@ var statsPrefix = "api.service."
 
 // Logger defines an interface for common logging operations
 type Logger interface {
-	ServiceStart(address, port string)
+	ServiceStart(address, port, version string)
 
 	HealthHandlerCalled() Finished
 
@@ -40,7 +40,7 @@ type Logger interface {
 type Finished func(status int, err error)
 
 // New creates a new logger with the given name and points it at a statsd server
-func New(name, statsDServer, logLevel string, logFormat string) (Logger, error) {
+func New(name, version, statsDServer, logLevel string, logFormat string) (Logger, error) {
 	o := hclog.DefaultOptions
 	o.Name = name
 
@@ -53,6 +53,7 @@ func New(name, statsDServer, logLevel string, logFormat string) (Logger, error) 
 	l := hclog.New(o)
 
 	c, err := statsd.New(statsDServer)
+	c.Tags = []string{fmt.Sprintf("version:%s", version)}
 
 	if err != nil {
 		return nil, err
@@ -73,9 +74,9 @@ func (l *LoggerImpl) Log() hclog.Logger {
 }
 
 // ServiceStart logs information about the service start
-func (l *LoggerImpl) ServiceStart(address, port string) {
+func (l *LoggerImpl) ServiceStart(address, port, version string) {
 	l.s.Incr(statsPrefix+"started", nil, 1)
-	l.l.Info("Service started", "address", address, "port", port)
+	l.l.Info("Service started", "address", address, "port", port, "version", version)
 }
 
 // HealthHandlerCalled logs information when the health handler is called, the returned function

@@ -1,5 +1,7 @@
 ---
 builds:
+- ldflags:
+  - -s -w -X "main.version={{.Version}}"
 - binary: emojify-api
   goos:
   - linux
