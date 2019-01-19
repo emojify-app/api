@@ -2,7 +2,7 @@
 builds:
 - ldflags:
   - -s -w -X "main.version={{.Version}}"
-- binary: emojify-api
+  binary: emojify-api
   goos:
   - linux
   goarch:
@@ -12,7 +12,8 @@ builds:
 
 dockers:
 -
-  binary: emojify-api
+  binaries:
+    - emojify-api
   goos: linux
   goarch: amd64
   dockerfile: Dockerfile
