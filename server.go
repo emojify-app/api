@@ -77,7 +77,7 @@ func main() {
 	e := emojify.NewEmojify(f, "./images/")
 
 	ch := handlers.NewCache(logger, cache)
-	router.Handle("/cache", ch).Methods("GET")
+	router.Handle("/{file}", ch).Methods("GET")
 
 	hh := handlers.NewHealth(logger)
 	router.Handle("/health", hh).Methods("GET")

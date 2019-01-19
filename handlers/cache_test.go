@@ -8,6 +8,7 @@ import (
 
 	"github.com/emojify-app/api/emojify"
 	"github.com/emojify-app/api/logging"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,9 +23,12 @@ func setupCacheHandler() (*httptest.ResponseRecorder, *http.Request, *Cache) {
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest(
 		"GET",
-		"/cache?file="+base64URL,
+		"/",
 		nil,
 	)
+
+	// Set the gorilla mux vars for testing
+	r = mux.SetURLVars(r, map[string]string{"file": base64URL})
 
 	h := &Cache{logger, &mockCache}
 

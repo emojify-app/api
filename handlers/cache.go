@@ -5,6 +5,7 @@ import (
 
 	"github.com/emojify-app/api/emojify"
 	"github.com/emojify-app/api/logging"
+	"github.com/gorilla/mux"
 )
 
 // Cache returns images from the cache
@@ -21,9 +22,10 @@ func NewCache(l logging.Logger, c emojify.Cache) *Cache {
 // ServeHTTP handles requests for cache
 func (c *Cache) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	done := c.logger.CacheHandlerCalled(r)
+	vars := mux.Vars(r) // Get varaibles from the request path
 
 	// check the parameters contains a valid url
-	f := r.URL.Query().Get("file")
+	f := vars["file"]
 	if f == "" {
 		c.logger.CacheHandlerBadRequest()
 		done(http.StatusBadRequest, nil)
