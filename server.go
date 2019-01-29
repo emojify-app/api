@@ -79,7 +79,7 @@ func main() {
 	ch := handlers.NewCache(logger, cache)
 	router.Handle("/cache/{file}", ch).Methods("GET")
 
-	hh := handlers.NewHealth(logger)
+	hh := handlers.NewHealth(logger, e)
 	router.Handle("/health", hh).Methods("GET")
 
 	eh := handlers.NewEmojify(e, f, logger, cache)

@@ -4,6 +4,7 @@ import (
 	"image"
 	"io"
 
+	"github.com/machinebox/sdk-go/boxutil"
 	"github.com/machinebox/sdk-go/facebox"
 	"github.com/stretchr/testify/mock"
 )
@@ -30,4 +31,14 @@ func (m *MockEmojify) GetFaces(r io.ReadSeeker) ([]facebox.Face, error) {
 	}
 
 	return args.Get(0).([]facebox.Face), args.Error(1)
+}
+
+func (m *MockEmojify) Health() (*boxutil.Info, error) {
+	args := m.Called()
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*boxutil.Info), args.Error(1)
 }
