@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/machinebox/sdk-go/boxutil"
 	"github.com/machinebox/sdk-go/facebox"
 	"github.com/nfnt/resize"
 )
@@ -17,24 +18,35 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+// Emojify defines an interface for emojify operations
 type Emojify interface {
 	Emojimise(image.Image, []facebox.Face) (image.Image, error)
 	GetFaces(f io.ReadSeeker) ([]facebox.Face, error)
+	Health() (*boxutil.Info, error)
 }
 
+// EmojifyImpl implements the Emojify interface
 type EmojifyImpl struct {
 	emojis  []image.Image
 	fetcher Fetcher
+	fb      *facebox.Client
 }
 
+// NewEmojify creates a new Emojify instance
 func NewEmojify(fetcher Fetcher, imagePath string) Emojify {
 	emojis := loadEmojis(imagePath)
+
+	fb := facebox.New(os.Getenv("FACEBOX"))
+	fb.HTTPClient.Timeout = 30000 * time.Millisecond
+
 	return &EmojifyImpl{
 		emojis:  emojis,
 		fetcher: fetcher,
+		fb:      fb,
 	}
 }
 
+// Emojimise detects faces in an image and replaces them with emoji
 func (e *EmojifyImpl) Emojimise(src image.Image, faces []facebox.Face) (image.Image, error) {
 	dstImage := image.NewRGBA(src.Bounds())
 	draw.Draw(dstImage, src.Bounds(), src, image.ZP, draw.Src)
@@ -54,16 +66,19 @@ func (e *EmojifyImpl) Emojimise(src image.Image, faces []facebox.Face) (image.Im
 	return dstImage, nil
 }
 
+// GetFaces finds the faces in an image
 func (e *EmojifyImpl) GetFaces(r io.ReadSeeker) ([]facebox.Face, error) {
 	_, err := r.Seek(0, os.SEEK_SET)
 	if err != nil {
 		return nil, err
 	}
 
-	fb := facebox.New(os.Getenv("FACEBOX"))
-	fb.HTTPClient.Timeout = 30000 * time.Millisecond
+	return e.fb.Check(r)
+}
 
-	return fb.Check(r)
+// Health returns health info about facebox
+func (e *EmojifyImpl) Health() (*boxutil.Info, error) {
+	return e.fb.Info()
 }
 
 func (e *EmojifyImpl) randomEmoji() image.Image {
