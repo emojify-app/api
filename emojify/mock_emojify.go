@@ -13,6 +13,7 @@ type MockEmojify struct {
 	mock.Mock
 }
 
+// Emojimise is a mock implementation of the interface function
 func (m *MockEmojify) Emojimise(src image.Image, faces []facebox.Face) (image.Image, error) {
 	args := m.Called(src, faces)
 
@@ -23,6 +24,7 @@ func (m *MockEmojify) Emojimise(src image.Image, faces []facebox.Face) (image.Im
 	return args.Get(0).(image.Image), args.Error(1)
 }
 
+// GetFaces is a mock implementation of the interface function
 func (m *MockEmojify) GetFaces(r io.ReadSeeker) ([]facebox.Face, error) {
 	args := m.Called(r)
 
@@ -33,6 +35,7 @@ func (m *MockEmojify) GetFaces(r io.ReadSeeker) ([]facebox.Face, error) {
 	return args.Get(0).([]facebox.Face), args.Error(1)
 }
 
+// Health is a mock implementation of the interface function
 func (m *MockEmojify) Health() (*boxutil.Info, error) {
 	args := m.Called()
 
