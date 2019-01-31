@@ -40,6 +40,11 @@ var cacheAddress = flag.String("cache-address", "localhost", "Address for the Ca
 var paymentGatewayURI = flag.String("payment-address", "localhost", "Address for the Payment gateway service")
 var logFormat = flag.String("log_format", "text", "Log output format [text,json]")
 
+// performance testing flags
+// these flags allow the user to inject faults into the service for testing purposes
+var cacheErrorRate = flag.Float64("cache-error-rate", 0.0, "Percentage where cache handler will report an error")
+var cacheErrorCode = flag.Int("cache-error-code", http.StatusInternalServerError, "Error code to return on error")
+
 func main() {
 	flag.Parse()
 
@@ -57,14 +62,15 @@ func main() {
 		"allowedOrigin", *allowedOrigin,
 	)
 
-	r := mux.NewRouter()
-	// update the path
+	// if the user has configured a path, make sure it ends in a /
 	if !strings.HasSuffix(*path, "/") {
 		*path = *path + "/"
 	}
 
-	authRouter := r.PathPrefix(*path).Subrouter()
-	router := r.PathPrefix(*path).Subrouter()
+	r := mux.NewRouter()
+	baseRouter := r.PathPrefix(*path).Subrouter()            // base subrouter with no middleware
+	authRouter := r.PathPrefix(*path).Subrouter()            // handlers which require authentication
+	cacheRouter := r.PathPrefix(*path + "cache").Subrouter() // caching subrouter
 
 	var cache emojify.Cache
 	if *cacheType == "redis" {
@@ -77,15 +83,13 @@ func main() {
 	e := emojify.NewEmojify(f, "./images/")
 
 	ch := handlers.NewCache(logger, cache)
-	router.Handle("/cache/{file}", ch).Methods("GET")
+	cacheRouter.Handle("/{file}", ch).Methods("GET")
 
 	hh := handlers.NewHealth(logger, e)
-	router.Handle("/health", hh).Methods("GET")
+	baseRouter.Handle("/health", hh).Methods("GET")
 
 	eh := handlers.NewEmojify(e, f, logger, cache)
 	authRouter.Handle("/", eh).Methods("POST")
-	//ph := paymentHandler{logger: logger.Named("paymentHandler"), paymentGatewayURI: *paymentGatewayURI}
-	//mux.HandleFunc(*path+"payments", ph.ServeHTTP)
 
 	// If auth is disabled do not use JWT auth
 	if !*disableAuth {
@@ -98,13 +102,20 @@ func main() {
 		authRouter.Use(m.Middleware)
 	}
 
+	// Setup error injection for testing
+	if *cacheErrorRate != 0.0 {
+		logger.Log().Info("Injecting errors into cache handler", "rate", *cacheErrorRate, "code", *cacheErrorCode)
+
+		em := handlers.NewErrorMiddleware(*cacheErrorRate, *cacheErrorCode, logger.Log().Named("error_handler"))
+		cacheRouter.Use(em.Middleware)
+	}
+
 	// setup CORS
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{*allowedOrigin},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
-		// Enable Debugging for testing, consider disabling in production
-		Debug: false,
+		Debug:            false,
 	})
 	handler := c.Handler(r)
 
