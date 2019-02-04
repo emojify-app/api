@@ -106,7 +106,7 @@ func main() {
 	if *cacheErrorRate != 0.0 {
 		logger.Log().Info("Injecting errors into cache handler", "rate", *cacheErrorRate, "code", *cacheErrorCode)
 
-		em := handlers.NewErrorMiddleware(*cacheErrorRate, *cacheErrorCode, logger.Log().Named("error_handler"))
+		em := handlers.NewErrorMiddleware(*cacheErrorRate, *cacheErrorCode, logger)
 		cacheRouter.Use(em.Middleware)
 	}
 
