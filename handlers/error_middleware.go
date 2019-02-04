@@ -3,19 +3,19 @@ package handlers
 import (
 	"net/http"
 
-	hclog "github.com/hashicorp/go-hclog"
+	"github.com/emojify-app/api/logging"
 )
 
 // ErrorMiddleware allows errors to be injected into handlers
 type ErrorMiddleware struct {
-	logger          hclog.Logger
+	logger          logging.Logger
 	errorPercentage int
 	errorCode       int
 	requestCount    int
 }
 
 // NewErrorMiddleware creates a new ErrorMiddleWare
-func NewErrorMiddleware(errorPercentage float64, errorCode int, l hclog.Logger) *ErrorMiddleware {
+func NewErrorMiddleware(errorPercentage float64, errorCode int, l logging.Logger) *ErrorMiddleware {
 	return &ErrorMiddleware{l, int(1 / errorPercentage), errorCode, 0}
 }
 
@@ -29,7 +29,7 @@ func (j *ErrorMiddleware) Middleware(next http.Handler) http.Handler {
 
 		// calculate if we need to throw an error or continue as normal
 		if j.requestCount%j.errorPercentage == 0 {
-			j.logger.Error("Injected error", "request count", j.requestCount, "percentage", j.errorPercentage)
+			j.logger.ErrorInjectionHandlerError(j.requestCount, j.errorPercentage)
 
 			http.Error(rw, "Error serving request", j.errorCode)
 			return

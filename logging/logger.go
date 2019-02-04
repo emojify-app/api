@@ -17,6 +17,8 @@ type Logger interface {
 
 	HealthHandlerCalled() Finished
 
+	ErrorInjectionHandlerError(requestCount, errorPercentage int)
+
 	CacheHandlerCalled(r *http.Request) Finished
 	CacheHandlerBadRequest()
 	CacheHandlerFileNotFound(f string)
@@ -89,6 +91,12 @@ func (l *LoggerImpl) HealthHandlerCalled() Finished {
 		l.s.Timing(statsPrefix+"health.called", time.Now().Sub(st), nil, 1)
 		l.l.Info("Health handler finished", "status", status)
 	}
+}
+
+// ErrorInjectionHandlerError log that an injected error has happened
+func (l *LoggerImpl) ErrorInjectionHandlerError(requestCount, errorPercentage int) {
+	l.l.Error("Injected error", "request count", requestCount, "percentage", errorPercentage)
+	l.s.Incr(statsPrefix+"error.injected", nil, 1)
 }
 
 // CacheHandlerCalled logs information when the cache handler is called, the returned function
