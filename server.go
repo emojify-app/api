@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 
 	"github.com/emojify-app/api/emojify"
 	"github.com/emojify-app/api/handlers"
 	"github.com/emojify-app/api/logging"
+	"github.com/emojify-app/cache/protos/cache"
 	"github.com/rs/cors"
 
 	_ "image/gif"
@@ -26,7 +28,6 @@ func init() {
 
 var version = "dev"
 
-var cacheType = flag.String("cache-type", "file", "Cache type, redis/file")
 var redisLocation = flag.String("redis-location", "localhost:1234", "Location for the redis server")
 var redisPassword = flag.String("redis-password", "", "Password for redis server")
 var allowedOrigin = flag.String("allow-origin", "*", "CORS origin")
@@ -57,7 +58,6 @@ func main() {
 	logger.ServiceStart("localhost", "9090", version)
 	logger.Log().Info(
 		"Startup parameters",
-		"cache_type", *cacheType,
 		"statsDServer", *statsDServer,
 		"allowedOrigin", *allowedOrigin,
 	)
@@ -72,23 +72,23 @@ func main() {
 	authRouter := r.PathPrefix(*path).Subrouter()            // handlers which require authentication
 	cacheRouter := r.PathPrefix(*path + "cache").Subrouter() // caching subrouter
 
-	var cache emojify.Cache
-	if *cacheType == "redis" {
-		cache = emojify.NewRedisCache(*redisLocation)
-	} else {
-		cache = emojify.NewFileCache("./cache/")
+	conn, err := grpc.Dial(*cacheAddress, grpc.WithInsecure())
+	if err != nil {
+		logger.Log().Error("Unable to create gRPC client", err)
+		os.Exit(1)
 	}
+	cacheClient := cache.NewCacheClient(conn)
 
 	f := &emojify.FetcherImpl{}
 	e := emojify.NewEmojify(f, "./images/")
 
-	ch := handlers.NewCache(logger, cache)
+	ch := handlers.NewCache(logger, cacheClient)
 	cacheRouter.Handle("/{file}", ch).Methods("GET")
 
 	hh := handlers.NewHealth(logger, e)
 	baseRouter.Handle("/health", hh).Methods("GET")
 
-	eh := handlers.NewEmojify(e, f, logger, cache)
+	eh := handlers.NewEmojify(e, f, logger, cacheClient)
 	authRouter.Handle("/", eh).Methods("POST")
 
 	// If auth is disabled do not use JWT auth

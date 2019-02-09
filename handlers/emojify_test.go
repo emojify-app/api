@@ -13,19 +13,23 @@ import (
 
 	"github.com/emojify-app/api/emojify"
 	"github.com/emojify-app/api/logging"
+	"github.com/emojify-app/cache/protos/cache"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/machinebox/sdk-go/facebox"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var mockFetcher emojify.MockFetcher
 var mockEmojifyer emojify.MockEmojify
-var mockCache emojify.MockCache
+var mockCache cache.ClientMock
 
 func setupEmojiHandler() (*httptest.ResponseRecorder, *http.Request, *Emojify) {
 	mockFetcher = emojify.MockFetcher{}
 	mockEmojifyer = emojify.MockEmojify{}
-	mockCache = emojify.MockCache{}
+	mockCache = cache.ClientMock{}
 	logger, _ := logging.New("test", "test", "localhost:8125", "DEBUG", "text")
 
 	rw := httptest.NewRecorder()
@@ -60,20 +64,43 @@ func TestReturns200IfImageIsCached(t *testing.T) {
 
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(u.String())))
-	mockCache.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
+	mockCache.On(
+		"Exists",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		&wrappers.BoolValue{Value: true},
+		nil,
+	)
 
 	h.ServeHTTP(rw, r)
 
 	assert.Equal(t, http.StatusOK, rw.Code)
-	//assert.Equal(t, base64URL, rw.Body.String())
 }
 
 func TestReturnsInternalServerErrorWhenCacheError(t *testing.T) {
 	url := "https://something.com"
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
-	mockFetcher.On("FetchImage", url).Return(nil, fmt.Errorf("Unable to get image"))
-	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, fmt.Errorf("boom"))
+
+	mockFetcher.On(
+		"FetchImage",
+		url,
+	).Return(
+		nil,
+		fmt.Errorf("Unable to get image"),
+	)
+
+	mockCache.On(
+		"Exists",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		nil,
+		status.Error(codes.Internal, ""),
+	)
 
 	h.ServeHTTP(rw, r)
 
@@ -84,8 +111,24 @@ func TestReturnsInternalServerErrorWhenCantFetchImage(t *testing.T) {
 	url := "https://something.com"
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
-	mockFetcher.On("FetchImage", url).Return(nil, fmt.Errorf("Unable to get image"))
-	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
+
+	mockFetcher.On(
+		"FetchImage",
+		url,
+	).Return(
+		nil,
+		fmt.Errorf("Unable to get image"),
+	)
+
+	mockCache.On(
+		"Exists",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		&wrappers.BoolValue{Value: false},
+		nil,
+	)
 
 	h.ServeHTTP(rw, r)
 
@@ -96,9 +139,32 @@ func TestReturnsInternalServerErrorWhenDataNotImage(t *testing.T) {
 	url := "https://something.com"
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
-	mockFetcher.On("FetchImage", url).Return(bytes.NewReader([]byte("")), nil)
-	mockFetcher.On("ReaderToImage", mock.Anything).Return(nil, fmt.Errorf("Invalid image"))
-	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
+
+	mockFetcher.On(
+		"FetchImage",
+		url,
+	).Return(
+		bytes.NewReader([]byte("")),
+		nil,
+	)
+
+	mockFetcher.On(
+		"ReaderToImage",
+		mock.Anything,
+	).Return(
+		nil,
+		fmt.Errorf("Invalid image"),
+	)
+
+	mockCache.On(
+		"Exists",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		&wrappers.BoolValue{Value: false},
+		nil,
+	)
 
 	h.ServeHTTP(rw, r)
 
@@ -110,10 +176,40 @@ func TestReturnsInternalServerErrorWhenDataNoFaces(t *testing.T) {
 	url := "https://something.com"
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
-	mockFetcher.On("FetchImage", url).Return(bytes.NewReader([]byte("")), nil)
-	mockFetcher.On("ReaderToImage", mock.Anything).Return(image.NewUniform(color.Black), nil)
-	mockEmojifyer.On("GetFaces", mock.Anything).Return(nil, fmt.Errorf("No faces"))
-	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
+
+	mockFetcher.On(
+		"FetchImage",
+		url,
+	).Return(
+		bytes.NewReader([]byte("")),
+		nil,
+	)
+
+	mockFetcher.On(
+		"ReaderToImage",
+		mock.Anything,
+	).Return(
+		image.NewUniform(color.Black),
+		nil,
+	)
+
+	mockEmojifyer.On(
+		"GetFaces",
+		mock.Anything,
+	).Return(
+		nil,
+		fmt.Errorf("No faces"),
+	)
+
+	mockCache.On(
+		"Exists",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		&wrappers.BoolValue{Value: false},
+		nil,
+	)
 
 	h.ServeHTTP(rw, r)
 
@@ -125,11 +221,49 @@ func TestReturnsInternalServerErrorWhenUnableToEmojify(t *testing.T) {
 	url := "https://something.com"
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
-	mockFetcher.On("FetchImage", url).Return(bytes.NewReader([]byte("")), nil)
-	mockFetcher.On("ReaderToImage", mock.Anything).Return(image.NewUniform(color.Black), nil)
-	mockEmojifyer.On("GetFaces", mock.Anything).Return(make([]facebox.Face, 0), nil)
-	mockEmojifyer.On("Emojimise", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("Cant emojify"))
-	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
+
+	mockFetcher.On(
+		"FetchImage",
+		url,
+	).Return(
+		bytes.NewReader([]byte("")),
+		nil,
+	)
+
+	mockFetcher.On(
+		"ReaderToImage",
+		mock.Anything,
+	).Return(
+		image.NewUniform(color.Black),
+		nil,
+	)
+
+	mockEmojifyer.On(
+		"GetFaces",
+		mock.Anything,
+	).Return(
+		make([]facebox.Face, 0),
+		nil,
+	)
+
+	mockEmojifyer.On(
+		"Emojimise",
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		nil,
+		fmt.Errorf("Cant emojify"),
+	)
+
+	mockCache.On(
+		"Exists",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		&wrappers.BoolValue{Value: false},
+		nil,
+	)
 
 	h.ServeHTTP(rw, r)
 
@@ -141,12 +275,59 @@ func TestReturnsInternalServiceErrorWhenUnableToSaveCache(t *testing.T) {
 	url := "https://something.com"
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
-	mockFetcher.On("FetchImage", url).Return(bytes.NewReader([]byte("")), nil)
-	mockFetcher.On("ReaderToImage", mock.Anything).Return(image.NewUniform(color.Black), nil)
-	mockEmojifyer.On("GetFaces", mock.Anything).Return(make([]facebox.Face, 0), nil)
-	mockEmojifyer.On("Emojimise", mock.Anything, mock.Anything).Return(image.NewRGBA64(image.Rect(0, 0, 0, 0)), nil)
-	mockCache.On("Put", mock.Anything, mock.Anything).Return(fmt.Errorf("Boom"))
-	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
+
+	mockFetcher.On(
+		"FetchImage",
+		url,
+	).Return(
+		bytes.NewReader([]byte("")),
+		nil,
+	)
+
+	mockFetcher.On(
+		"ReaderToImage",
+		mock.Anything,
+	).Return(
+		image.NewUniform(color.Black),
+		nil,
+	)
+
+	mockEmojifyer.On(
+		"GetFaces",
+		mock.Anything,
+	).Return(
+		make([]facebox.Face, 0),
+		nil,
+	)
+
+	mockEmojifyer.On(
+		"Emojimise",
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		image.NewRGBA64(
+			image.Rect(0, 0, 0, 0)),
+		nil,
+	)
+
+	mockCache.On(
+		"Put",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		status.Error(codes.Internal, ""),
+	)
+
+	mockCache.On(
+		"Exists",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		&wrappers.BoolValue{Value: false},
+		nil,
+	)
 
 	h.ServeHTTP(rw, r)
 
@@ -158,12 +339,59 @@ func TestReturnsStatusOKOnSuccess(t *testing.T) {
 	rw, r, h := setupEmojiHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(url)))
 	img := image.NewRGBA64(image.Rect(0, 0, 400, 400))
-	mockFetcher.On("FetchImage", url).Return(bytes.NewReader([]byte("")), nil)
-	mockFetcher.On("ReaderToImage", mock.Anything).Return(image.NewUniform(color.Black), nil)
-	mockEmojifyer.On("GetFaces", mock.Anything).Return(make([]facebox.Face, 0), nil)
-	mockEmojifyer.On("Emojimise", mock.Anything, mock.Anything).Return(img, nil)
-	mockCache.On("Put", mock.Anything, mock.Anything).Return(nil)
-	mockCache.On("Exists", mock.Anything, mock.Anything).Return(false, nil)
+
+	mockFetcher.On(
+		"FetchImage",
+		url,
+	).Return(
+		bytes.NewReader([]byte("")),
+		nil,
+	)
+
+	mockFetcher.On(
+		"ReaderToImage",
+		mock.Anything,
+	).Return(
+		image.NewUniform(color.Black),
+		nil,
+	)
+
+	mockEmojifyer.On(
+		"GetFaces",
+		mock.Anything,
+	).Return(
+		make([]facebox.Face, 0),
+		nil,
+	)
+
+	mockEmojifyer.On(
+		"Emojimise",
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		img,
+		nil,
+	)
+
+	mockCache.On(
+		"Put",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		&wrappers.StringValue{Value: "abc"},
+		nil,
+	)
+
+	mockCache.On(
+		"Exists",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		&wrappers.BoolValue{Value: false},
+		nil,
+	)
 
 	h.ServeHTTP(rw, r)
 
