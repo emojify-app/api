@@ -40,7 +40,8 @@ func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// check cache health
 	_, err = h.cc.Get(context.Background(), &wrappers.StringValue{Value: "notexist"})
 	if s := status.Convert(err); s != nil && s.Code() != codes.NotFound {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		fmt.Printf("error %#v %s\n", s, s.Message())
+		http.Error(rw, s.Message(), http.StatusInternalServerError)
 		return
 	}
 
