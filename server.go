@@ -72,6 +72,8 @@ func main() {
 	authRouter := r.PathPrefix(*path).Subrouter()            // handlers which require authentication
 	cacheRouter := r.PathPrefix(*path + "cache").Subrouter() // caching subrouter
 
+	logger.Log().Info("Connecting to cache", "address", *cacheAddress)
+
 	conn, err := grpc.Dial(*cacheAddress, grpc.WithInsecure())
 	if err != nil {
 		logger.Log().Error("Unable to create gRPC client", err)
