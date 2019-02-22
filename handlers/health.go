@@ -36,7 +36,7 @@ func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// check cache health
-	resp, err := h.cc.Check(context.Background(), &cache.HealthCheckRequest{}, nil)
+	resp, err := h.cc.Check(context.Background(), &cache.HealthCheckRequest{})
 	if s := status.Convert(err); err != nil && s != nil {
 		http.Error(rw, fmt.Sprintf("Error checking cache health %s", s.Message()), http.StatusInternalServerError)
 		return
