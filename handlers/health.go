@@ -8,8 +8,6 @@ import (
 	"github.com/emojify-app/api/emojify"
 	"github.com/emojify-app/api/logging"
 	"github.com/emojify-app/cache/protos/cache"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -33,18 +31,18 @@ func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// check facebox health
 	info, err := h.em.Health()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		http.Error(rw, fmt.Sprintf("Error checking facebox health %s", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
 	// check cache health
-	_, err = h.cc.Get(context.Background(), &wrappers.StringValue{Value: "notexist"})
-	if s := status.Convert(err); s != nil && s.Code() != codes.NotFound {
-		fmt.Printf("error %#v %s\n", s, s.Message())
-		http.Error(rw, s.Message(), http.StatusInternalServerError)
+	resp, err := h.cc.Check(context.Background(), &cache.HealthCheckRequest{}, nil)
+	if s := status.Convert(err); s != nil {
+		http.Error(rw, fmt.Sprintf("Error checking cache health %s", s.Message()), http.StatusInternalServerError)
 		return
 	}
 
 	rw.Write([]byte("OK\n"))
 	rw.Write([]byte(fmt.Sprintf("Facebox version: %d\n", info.Version)))
+	rw.Write([]byte(fmt.Sprintf("Cache status %d\n", resp.GetStatus())))
 }
