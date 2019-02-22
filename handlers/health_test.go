@@ -11,8 +11,6 @@ import (
 	"github.com/machinebox/sdk-go/boxutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func setupHealthTests() (*Health, *httptest.ResponseRecorder, *http.Request) {
@@ -24,8 +22,7 @@ func setupHealthTests() (*Health, *httptest.ResponseRecorder, *http.Request) {
 	em.On("Health", mock.Anything).Return(&boxutil.Info{}, nil)
 
 	cc := &cache.ClientMock{}
-	s := status.Error(codes.NotFound, "Not Found")
-	cc.On("Get", mock.Anything, mock.Anything, mock.Anything).Return(nil, s)
+	cc.On("Check", mock.Anything, mock.Anything, mock.Anything).Return(&cache.HealthCheckResponse{Status: cache.HealthCheckResponse_SERVING}, nil)
 
 	return &Health{l, em, cc}, rw, r
 }
