@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/emojify-app/api/logging"
@@ -43,7 +42,6 @@ func (c *Cache) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	cgd := c.logger.CacheHandlerGetFile(f)
 	d, err := c.cache.Get(context.Background(), &wrappers.StringValue{Value: f})
 
-	fmt.Println("err", d, err)
 	if s := status.Convert(err); s != nil && s.Code() == codes.NotFound {
 		cgd(http.StatusNotFound, nil)
 		done(http.StatusNotFound, nil)
