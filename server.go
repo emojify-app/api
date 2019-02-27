@@ -40,6 +40,7 @@ var path = flag.String("path", "/", "Path to mount API, defaults to /")
 var cacheAddress = flag.String("cache-address", "localhost", "Address for the Cache service")
 var paymentGatewayURI = flag.String("payment-address", "localhost", "Address for the Payment gateway service")
 var logFormat = flag.String("log_format", "text", "Log output format [text,json]")
+var logLevel = flag.String("log_level", "error", "Log output level [trace,info,debug,warn,error]")
 
 // performance testing flags
 // these flags allow the user to inject faults into the service for testing purposes
@@ -49,7 +50,7 @@ var cacheErrorCode = flag.Int("cache-error-code", http.StatusInternalServerError
 func main() {
 	flag.Parse()
 
-	logger, err := logging.New("api", version, *statsDServer, "DEBUG", *logFormat)
+	logger, err := logging.New("api", version, *statsDServer, *logLevel, *logFormat)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
