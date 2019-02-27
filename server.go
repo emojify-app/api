@@ -71,6 +71,8 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
+
 	baseRouter := r.PathPrefix(*path).Subrouter()            // base subrouter with no middleware
 	authRouter := r.PathPrefix(*path).Subrouter()            // handlers which require authentication
 	cacheRouter := r.PathPrefix(*path + "cache").Subrouter() // caching subrouter
