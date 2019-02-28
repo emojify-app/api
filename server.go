@@ -47,7 +47,9 @@ var logLevel = flag.String("log_level", "info", "Log output level [trace,info,de
 // performance testing flags
 // these flags allow the user to inject faults into the service for testing purposes
 var cacheErrorRate = flag.Float64("cache-error-rate", 0.0, "Percentage where cache handler will report an error")
+var cacheErrorType = flag.String("cache-error-type", "http_error", "Type of error [http_error, delay]")
 var cacheErrorCode = flag.Int("cache-error-code", http.StatusInternalServerError, "Error code to return on error")
+var cacheErrorDelay = flag.Duration("cache-error-delay", 0*time.Second, "Error delay [1s,100ms]")
 
 func main() {
 	flag.Parse()
@@ -113,7 +115,7 @@ func main() {
 	if *cacheErrorRate != 0.0 {
 		logger.Log().Info("Injecting errors into cache handler", "rate", *cacheErrorRate, "code", *cacheErrorCode)
 
-		em := handlers.NewErrorMiddleware(*cacheErrorRate, *cacheErrorCode, logger)
+		em := handlers.NewErrorMiddleware(*cacheErrorRate, *cacheErrorCode, *cacheErrorDelay, *cacheErrorType, logger)
 		cacheRouter.Use(em.Middleware)
 	}
 
