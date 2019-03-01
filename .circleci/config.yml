@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.11.4
+      - image: circleci/golang:1.12
     environment:
       GO111MODULE: "on"
     working_directory: /go/src/github.com/emojify-app/api
@@ -16,7 +16,7 @@ jobs:
           command: go test -v --race ./...
   release:
     docker:
-      - image: circleci/golang:1.11.4
+      - image: circleci/golang:1.12
     environment:
       GO111MODULE: "on"
     working_directory: /go/src/github.com/emojify-app/api

@@ -17,7 +17,7 @@ type Logger interface {
 
 	HealthHandlerCalled() Finished
 
-	ErrorInjectionHandlerError(requestCount, errorPercentage int)
+	ErrorInjectionHandlerError(requestCount, errorPercentage int, errorType string)
 
 	CacheHandlerCalled(r *http.Request) Finished
 	CacheHandlerBadRequest()
@@ -85,29 +85,29 @@ func (l *LoggerImpl) ServiceStart(address, port, version string) {
 // must be called once work has completed
 func (l *LoggerImpl) HealthHandlerCalled() Finished {
 	st := time.Now()
-	l.l.Info("Health handler called")
+	l.l.Debug("Health handler called")
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"health.called", time.Now().Sub(st), nil, 1)
-		l.l.Info("Health handler finished", "status", status)
+		l.l.Debug("Health handler finished", "status", status)
 	}
 }
 
 // ErrorInjectionHandlerError log that an injected error has happened
-func (l *LoggerImpl) ErrorInjectionHandlerError(requestCount, errorPercentage int) {
-	l.l.Error("Injected error", "request count", requestCount, "percentage", errorPercentage)
-	l.s.Incr(statsPrefix+"error.injected", nil, 1)
+func (l *LoggerImpl) ErrorInjectionHandlerError(requestCount, errorPercentage int, errorType string) {
+	l.l.Error("Injected error", "request count", requestCount, "percentage", errorPercentage, "type", errorType)
+	l.s.Incr(statsPrefix+"error.injected", []string{"type:" + errorType}, 1)
 }
 
 // CacheHandlerCalled logs information when the cache handler is called, the returned function
 // must be called once work has completed
 func (l *LoggerImpl) CacheHandlerCalled(r *http.Request) Finished {
 	st := time.Now()
-	l.l.Info("Cache called", "method", r.Method, "URI", r.URL.String())
+	l.l.Debug("Cache called", "method", r.Method, "URI", r.URL.String())
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"cache.called", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Info("Cache handler finished", "status", status)
+		l.l.Error("Cache handler finished", "status", status)
 	}
 }
 
@@ -115,19 +115,19 @@ func (l *LoggerImpl) CacheHandlerCalled(r *http.Request) Finished {
 // missing parameters
 func (l *LoggerImpl) CacheHandlerBadRequest() {
 	l.s.Incr(statsPrefix+"cache.missing_parameter", nil, 1)
-	l.l.Info("File is a required parameter", "handler", "cache")
+	l.l.Error("File is a required parameter", "handler", "cache")
 }
 
 // CacheHandlerFileNotFound logs information when the a file is missing from the cache
 func (l *LoggerImpl) CacheHandlerFileNotFound(f string) {
 	l.s.Incr(statsPrefix+"cache.file_not_found", nil, 1)
-	l.l.Info("File not found in cache", "handler", "cache", "file", f)
+	l.l.Debug("File not found in cache", "handler", "cache", "file", f)
 }
 
 // CacheHandlerGetFile logs information when data is fetched from the cache
 func (l *LoggerImpl) CacheHandlerGetFile(f string) Finished {
 	st := time.Now()
-	l.l.Info("Fetching file from cache", "handler", "cache", "file", f)
+	l.l.Debug("Fetching file from cache", "handler", "cache", "file", f)
 
 	return func(status int, err error) {
 		if err != nil {
@@ -142,7 +142,7 @@ func (l *LoggerImpl) CacheHandlerGetFile(f string) Finished {
 // EmojifyHandlerCalled logs information when the Emojify handler is called
 func (l *LoggerImpl) EmojifyHandlerCalled(r *http.Request) Finished {
 	st := time.Now()
-	l.l.Info("Emojify called", "method", r.Method, "URI", r.URL.String())
+	l.l.Debug("Emojify called", "method", r.Method, "URI", r.URL.String())
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.called", time.Now().Sub(st), getStatusTags(status), 1)
@@ -152,7 +152,7 @@ func (l *LoggerImpl) EmojifyHandlerCalled(r *http.Request) Finished {
 
 // EmojifyHandlerNoPostBody logs information when no post body is sent with the request
 func (l *LoggerImpl) EmojifyHandlerNoPostBody() {
-	l.l.Info("No body for POST", "handler", "emojify")
+	l.l.Error("No body for POST", "handler", "emojify")
 	l.s.Incr(statsPrefix+"emojify.no_post_body", nil, 1)
 }
 
@@ -165,11 +165,11 @@ func (l *LoggerImpl) EmojifyHandlerInvalidURL(uri string, err error) {
 // EmojifyHandlerCacheCheck logs information about a cache check
 func (l *LoggerImpl) EmojifyHandlerCacheCheck(key string) Finished {
 	st := time.Now()
-	l.l.Info("Checking cache", "handler", "emojify", "key", key)
+	l.l.Debug("Checking cache", "handler", "emojify", "key", key)
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.cache_check", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Info("Emojify cache finished", "handler", "emojify", "status", status)
+		l.l.Debug("Emojify cache finished", "handler", "emojify", "status", status)
 
 		if err != nil {
 			l.l.Error("Error checking cache", "handler", "emojify", "key", key, "error", err)
@@ -180,11 +180,11 @@ func (l *LoggerImpl) EmojifyHandlerCacheCheck(key string) Finished {
 // EmojifyHandlerFetchImage logs information about a remote fetch for the image
 func (l *LoggerImpl) EmojifyHandlerFetchImage(uri string) Finished {
 	st := time.Now()
-	l.l.Info("Fetching file", "handler", "emojify", "uri", uri)
+	l.l.Debug("Fetching file", "handler", "emojify", "uri", uri)
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.fetch_file", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Info("Fetching file finished", "handler", "emojify", "status", status)
+		l.l.Debug("Fetching file finished", "handler", "emojify", "status", status)
 
 		if err != nil {
 			l.l.Error("Error fetching file", "handler", "emojify", "status", status, "uri", uri, "error", err)
@@ -194,18 +194,18 @@ func (l *LoggerImpl) EmojifyHandlerFetchImage(uri string) Finished {
 
 // EmojifyHandlerInvalidImage logs information when an invalid image is returned from the fetch
 func (l *LoggerImpl) EmojifyHandlerInvalidImage(uri string, err error) {
-	l.l.Info("Invalid image format", "handler", "emojify", "uri", uri, "error", err)
+	l.l.Error("Invalid image format", "handler", "emojify", "uri", uri, "error", err)
 	l.s.Incr(statsPrefix+"emojify.invalid_image", nil, 1)
 }
 
 // EmojifyHandlerFindFaces logs information related to the face lookup call
 func (l *LoggerImpl) EmojifyHandlerFindFaces(uri string) Finished {
 	st := time.Now()
-	l.l.Info("Find faces in image", "handler", "emojify", "uri", uri)
+	l.l.Debug("Find faces in image", "handler", "emojify", "uri", uri)
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.find_faces", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Info("Find faces finished", "handler", "emojify", "status", status)
+		l.l.Debug("Find faces finished", "handler", "emojify", "status", status)
 
 		if err != nil {
 			l.l.Error("Unable to find faces", "handler", "emojify", "uri", uri, "error", err)
@@ -216,11 +216,11 @@ func (l *LoggerImpl) EmojifyHandlerFindFaces(uri string) Finished {
 // EmojifyHandlerEmojify logs information when emojifying the image
 func (l *LoggerImpl) EmojifyHandlerEmojify(uri string) Finished {
 	st := time.Now()
-	l.l.Info("Emojify image", "handler", "emojify", "uri", uri)
+	l.l.Debug("Emojify image", "handler", "emojify", "uri", uri)
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.find_faces", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Info("Find faces finished", "handler", "emojify", "status", status)
+		l.l.Debug("Find faces finished", "handler", "emojify", "status", status)
 
 		if err != nil {
 			l.l.Error("Unable to emojify", "handler", "emojify", "uri", uri, "error", err)
@@ -237,11 +237,11 @@ func (l *LoggerImpl) EmojifyHandlerImageEncodeError(uri string, err error) {
 // EmojifyHandlerCachePut logs information when an image is pushed to the cache
 func (l *LoggerImpl) EmojifyHandlerCachePut(uri string) Finished {
 	st := time.Now()
-	l.l.Info("Cache image", "handler", "emojify", "uri", uri)
+	l.l.Debug("Cache image", "handler", "emojify", "uri", uri)
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.cache_put", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Info("Cache image finished", "handler", "emojify", "status", status)
+		l.l.Debug("Cache image finished", "handler", "emojify", "status", status)
 
 		if err != nil {
 			l.l.Error("Unable to save image to cache", "handler", "emojify", "uri", uri, "error", err)

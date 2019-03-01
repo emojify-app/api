@@ -17,3 +17,6 @@ run_machinebox_connect:
 
 run_consul:
 	consul agent -config-file ./consul.hcl -config-format hcl
+
+run_test_functional:
+	docker run --rm -p 9090:9090 -p 9091:9091 -e BIND_ADDRESS=0.0.0.0 nicholasjackson/emojify-cache:v0.3.4

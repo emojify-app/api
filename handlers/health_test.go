@@ -7,6 +7,7 @@ import (
 
 	"github.com/emojify-app/api/emojify"
 	"github.com/emojify-app/api/logging"
+	"github.com/emojify-app/cache/protos/cache"
 	"github.com/machinebox/sdk-go/boxutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -20,7 +21,10 @@ func setupHealthTests() (*Health, *httptest.ResponseRecorder, *http.Request) {
 	em := &emojify.MockEmojify{}
 	em.On("Health", mock.Anything).Return(&boxutil.Info{}, nil)
 
-	return &Health{l, em}, rw, r
+	cc := &cache.ClientMock{}
+	cc.On("Check", mock.Anything, mock.Anything, mock.Anything).Return(&cache.HealthCheckResponse{Status: cache.HealthCheckResponse_SERVING}, nil)
+
+	return &Health{l, em, cc}, rw, r
 }
 
 func TestHealthHandlerReturnsOK(t *testing.T) {

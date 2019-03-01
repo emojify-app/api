@@ -1,21 +1,25 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/emojify-app/api/emojify"
 	"github.com/emojify-app/api/logging"
+	"github.com/emojify-app/cache/protos/cache"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Cache returns images from the cache
 type Cache struct {
 	logger logging.Logger
-	cache  emojify.Cache
+	cache  cache.CacheClient
 }
 
 // NewCache creates a new http.Handler for dealing with cache requests
-func NewCache(l logging.Logger, c emojify.Cache) *Cache {
+func NewCache(l logging.Logger, c cache.CacheClient) *Cache {
 	return &Cache{l, c}
 }
 
@@ -36,16 +40,9 @@ func (c *Cache) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// fetch the file from the cache
 	cgd := c.logger.CacheHandlerGetFile(f)
-	d, err := c.cache.Get(f)
-	if err != nil {
-		cgd(http.StatusInternalServerError, err)
-		done(http.StatusNotFound, nil)
+	d, err := c.cache.Get(context.Background(), &wrappers.StringValue{Value: f})
 
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if d == nil || len(d) == 0 {
+	if s := status.Convert(err); s != nil && s.Code() == codes.NotFound {
 		cgd(http.StatusNotFound, nil)
 		done(http.StatusNotFound, nil)
 
@@ -53,12 +50,20 @@ func (c *Cache) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err != nil {
+		cgd(http.StatusInternalServerError, err)
+		done(http.StatusInternalServerError, nil)
+
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	cgd(http.StatusOK, nil)
 
-	fileType := http.DetectContentType(d)
+	fileType := http.DetectContentType(d.Data)
 
 	// all ok return the file
 	rw.Header().Add("content-type", fileType)
-	rw.Write(d)
+	rw.Write(d.Data)
 	done(http.StatusOK, nil)
 }
