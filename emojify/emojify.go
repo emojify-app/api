@@ -1,6 +1,7 @@
 package emojify
 
 import (
+	"fmt"
 	"image"
 	"image/draw"
 	"io"
@@ -27,16 +28,17 @@ type Emojify interface {
 
 // EmojifyImpl implements the Emojify interface
 type EmojifyImpl struct {
-	emojis  []image.Image
-	fetcher Fetcher
-	fb      *facebox.Client
+	emojis         []image.Image
+	fetcher        Fetcher
+	fb             *facebox.Client
+	faceboxAddress string
 }
 
 // NewEmojify creates a new Emojify instance
-func NewEmojify(fetcher Fetcher, imagePath string) Emojify {
+func NewEmojify(fetcher Fetcher, address, imagePath string) Emojify {
 	emojis := loadEmojis(imagePath)
 
-	fb := facebox.New(os.Getenv("FACEBOX"))
+	fb := facebox.New(fmt.Sprintf("http://%s", address))
 	fb.HTTPClient.Timeout = 30000 * time.Millisecond
 
 	return &EmojifyImpl{

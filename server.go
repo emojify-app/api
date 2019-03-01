@@ -39,6 +39,7 @@ var disableAuth = flag.Bool("authn-disable", false, "Disable authn integration")
 var bindAddress = flag.String("bind-address", "localhost:9090", "Bind address for the server defaults to localhost:9090")
 var path = flag.String("path", "/", "Path to mount API, defaults to /")
 var cacheAddress = flag.String("cache-address", "localhost", "Address for the Cache service")
+var faceboxAddress = flag.String("facebox-address", "localhost", "Address for the Cache service")
 var paymentGatewayURI = flag.String("payment-address", "localhost", "Address for the Payment gateway service")
 var logFormat = flag.String("log_format", "text", "Log output format [text,json]")
 var logLevel = flag.String("log_level", "info", "Log output level [trace,info,debug,warn,error]")
@@ -88,7 +89,7 @@ func main() {
 	cacheClient := cache.NewCacheClient(conn)
 
 	f := &emojify.FetcherImpl{}
-	e := emojify.NewEmojify(f, "./images/")
+	e := emojify.NewEmojify(f, *faceboxAddress, "./images/")
 
 	ch := handlers.NewCache(logger, cacheClient)
 	cacheRouter.Handle("/{file}", ch).Methods("GET")
