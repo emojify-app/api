@@ -94,7 +94,7 @@ func main() {
 	}
 	cacheClient := cache.NewCacheClient(conn)
 
-	f := &emojify.FetcherImpl{}
+	f := emojify.NewFetcher()
 	e := emojify.NewEmojify(f, *faceboxAddress, "./images/", int32(*faceboxWorkers), *faceboxWorkerTimeout)
 
 	ch := handlers.NewCache(logger, cacheClient)
