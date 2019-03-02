@@ -100,7 +100,7 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	ffDone := e.logger.EmojifyHandlerFindFaces(u.String())
-	doneChan := make(chan emojify.FindFaceResponse)
+	doneChan := make(chan emojify.FindFaceResponse, 1) // do not block on write
 	e.emojifyer.GetFaces(f, doneChan)
 	resp := <-doneChan
 
