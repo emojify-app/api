@@ -319,6 +319,7 @@ func TestReturnsInternalServiceErrorWhenUnableToSaveCache(t *testing.T) {
 		mock.Anything,
 		mock.Anything,
 	).Return(
+		nil,
 		status.Error(codes.Internal, ""),
 	)
 

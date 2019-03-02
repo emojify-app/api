@@ -5,7 +5,8 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"image/jpeg" // import image
+	"image/jpeg"  // import image
+	_ "image/png" // import image
 	"io"
 	"io/ioutil"
 	"net/http"
