@@ -39,10 +39,16 @@ var disableAuth = flag.Bool("authn-disable", false, "Disable authn integration")
 var bindAddress = flag.String("bind-address", "localhost:9090", "Bind address for the server defaults to localhost:9090")
 var path = flag.String("path", "/", "Path to mount API, defaults to /")
 var cacheAddress = flag.String("cache-address", "localhost", "Address for the Cache service")
-var faceboxAddress = flag.String("facebox-address", "localhost", "Address for the Cache service")
 var paymentGatewayURI = flag.String("payment-address", "localhost", "Address for the Payment gateway service")
+
+// logging settings
 var logFormat = flag.String("log_format", "text", "Log output format [text,json]")
 var logLevel = flag.String("log_level", "info", "Log output level [trace,info,debug,warn,error]")
+
+// flags for facebox config
+var faceboxAddress = flag.String("facebox-address", "localhost", "Address for the Cache service")
+var faceboxWorkers = flag.Int("facebox-workers", 1, "Number of sequential workers for facebox service")
+var faceboxWorkerTimeout = flag.Duration("facebox-worker-timeout", 1*time.Minute, "Max wait time to aquire a worker")
 
 // performance testing flags
 // these flags allow the user to inject faults into the service for testing purposes
@@ -89,7 +95,7 @@ func main() {
 	cacheClient := cache.NewCacheClient(conn)
 
 	f := &emojify.FetcherImpl{}
-	e := emojify.NewEmojify(f, *faceboxAddress, "./images/")
+	e := emojify.NewEmojify(f, *faceboxAddress, "./images/", int32(*faceboxWorkers), *faceboxWorkerTimeout)
 
 	ch := handlers.NewCache(logger, cacheClient)
 	cacheRouter.Handle("/{file}", ch).Methods("GET")

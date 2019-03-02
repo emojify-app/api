@@ -30,7 +30,7 @@ func setupEmojiHandler() (*httptest.ResponseRecorder, *http.Request, *Emojify) {
 	mockFetcher = emojify.MockFetcher{}
 	mockEmojifyer = emojify.MockEmojify{}
 	mockCache = cache.ClientMock{}
-	logger, _ := logging.New("test", "test", "localhost:8125", "DEBUG", "text")
+	logger, _ := logging.New("test", "test", "localhost:8125", "error", "text")
 
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/", nil)
@@ -196,6 +196,7 @@ func TestReturnsInternalServerErrorWhenDataNoFaces(t *testing.T) {
 	mockEmojifyer.On(
 		"GetFaces",
 		mock.Anything,
+		mock.Anything,
 	).Return(
 		nil,
 		fmt.Errorf("No faces"),
@@ -240,6 +241,7 @@ func TestReturnsInternalServerErrorWhenUnableToEmojify(t *testing.T) {
 
 	mockEmojifyer.On(
 		"GetFaces",
+		mock.Anything,
 		mock.Anything,
 	).Return(
 		make([]facebox.Face, 0),
@@ -294,6 +296,7 @@ func TestReturnsInternalServiceErrorWhenUnableToSaveCache(t *testing.T) {
 
 	mockEmojifyer.On(
 		"GetFaces",
+		mock.Anything,
 		mock.Anything,
 	).Return(
 		make([]facebox.Face, 0),
@@ -358,6 +361,7 @@ func TestReturnsStatusOKOnSuccess(t *testing.T) {
 
 	mockEmojifyer.On(
 		"GetFaces",
+		mock.Anything,
 		mock.Anything,
 	).Return(
 		make([]facebox.Face, 0),

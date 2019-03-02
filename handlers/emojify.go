@@ -100,18 +100,20 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	ffDone := e.logger.EmojifyHandlerFindFaces(u.String())
-	faces, err := e.emojifyer.GetFaces(f)
-	if err != nil {
+	doneChan := make(chan emojify.FindFaceResponse)
+	e.emojifyer.GetFaces(f, doneChan)
+	resp := <-doneChan
+
+	if resp.Error != nil {
 		ffDone(http.StatusInternalServerError, err)
 		done(http.StatusInternalServerError, nil)
-
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		http.Error(rw, resp.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 	ffDone(http.StatusOK, nil)
 
 	emDone := e.logger.EmojifyHandlerEmojify(u.String())
-	i, err := e.emojifyer.Emojimise(img, faces)
+	i, err := e.emojifyer.Emojimise(img, resp.Faces)
 	if err != nil {
 		emDone(http.StatusInternalServerError, err)
 		done(http.StatusInternalServerError, nil)
