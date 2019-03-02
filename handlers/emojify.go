@@ -25,11 +25,15 @@ type Emojify struct {
 	fetcher   emojify.Fetcher
 	logger    logging.Logger
 	cache     cache.CacheClient
+	encoder   *png.Encoder
 }
 
 // NewEmojify returns a new instance of the Emojify handler
 func NewEmojify(e emojify.Emojify, f emojify.Fetcher, l logging.Logger, c cache.CacheClient) *Emojify {
-	return &Emojify{e, f, l, c}
+	enc := &png.Encoder{
+		CompressionLevel: png.NoCompression,
+	}
+	return &Emojify{e, f, l, c, enc}
 }
 
 // ServeHTTP implements the handler function
@@ -125,7 +129,7 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// save the image
 	out := new(bytes.Buffer)
-	err = png.Encode(out, i)
+	err = e.encoder.Encode(out, i)
 	if err != nil {
 		e.logger.EmojifyHandlerImageEncodeError(u.String(), err)
 
