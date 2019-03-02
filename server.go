@@ -42,8 +42,8 @@ var cacheAddress = flag.String("cache-address", "localhost", "Address for the Ca
 var paymentGatewayURI = flag.String("payment-address", "localhost", "Address for the Payment gateway service")
 
 // logging settings
-var logFormat = flag.String("log_format", "text", "Log output format [text,json]")
-var logLevel = flag.String("log_level", "info", "Log output level [trace,info,debug,warn,error]")
+var logFormat = flag.String("log-format", "text", "Log output format [text,json]")
+var logLevel = flag.String("log-level", "info", "Log output level [trace,info,debug,warn,error]")
 
 // flags for facebox config
 var faceboxAddress = flag.String("facebox-address", "localhost", "Address for the Cache service")
