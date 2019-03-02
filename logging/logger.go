@@ -107,7 +107,12 @@ func (l *LoggerImpl) CacheHandlerCalled(r *http.Request) Finished {
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"cache.called", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Error("Cache handler finished", "status", status)
+		if err != nil {
+			l.l.Error("Cache handler finished", "status", status, "error", err)
+			return
+		}
+
+		l.l.Debug("Cache handler finished", "status", status)
 	}
 }
 
