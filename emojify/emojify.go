@@ -49,7 +49,7 @@ func NewEmojify(fetcher Fetcher, address, imagePath string, workers int32, timeo
 	emojis := loadEmojis(imagePath)
 
 	fb := facebox.New(fmt.Sprintf("http://%s", address))
-	//fb.HTTPClient.Timeout = 60 * time.Second
+	fb.HTTPClient.Timeout = 60 * time.Second
 
 	return &Impl{
 		emojis:         emojis,
