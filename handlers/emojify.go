@@ -5,8 +5,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	_ "image/jpeg" // import image
-	"image/png"
+	"image/jpeg" // import image
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -25,15 +24,11 @@ type Emojify struct {
 	fetcher   emojify.Fetcher
 	logger    logging.Logger
 	cache     cache.CacheClient
-	encoder   *png.Encoder
 }
 
 // NewEmojify returns a new instance of the Emojify handler
 func NewEmojify(e emojify.Emojify, f emojify.Fetcher, l logging.Logger, c cache.CacheClient) *Emojify {
-	enc := &png.Encoder{
-		CompressionLevel: png.NoCompression,
-	}
-	return &Emojify{e, f, l, c, enc}
+	return &Emojify{e, f, l, c}
 }
 
 // ServeHTTP implements the handler function
@@ -129,7 +124,7 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// save the image
 	out := new(bytes.Buffer)
-	err = e.encoder.Encode(out, i)
+	err = jpeg.Encode(out, i, &jpeg.Options{Quality: 60})
 	if err != nil {
 		e.logger.EmojifyHandlerImageEncodeError(u.String(), err)
 
