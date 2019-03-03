@@ -81,7 +81,7 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	for e.currentWorkers() >= e.faceboxWorkers {
 		if time.Now().Sub(st) > e.workerTimeout {
 			http.Error(rw, "Service Busy", http.StatusTooManyRequests)
-			done(http.StatusTooManyRequests, nil)
+			done(http.StatusTooManyRequests, errors.New("Timeout while waiting for a worker"))
 			return
 		}
 
@@ -90,6 +90,23 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// ok to continue aquire a worker
 	e.aquireWorker()
+
+	// check the cache again just incase another thread has processed the same image
+	ok, err = e.checkCache(key)
+	if err != nil {
+		e.releaseWorker()
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		done(http.StatusInternalServerError, nil)
+		return
+	}
+
+	// cache found message if ok
+	if ok {
+		e.releaseWorker()
+		rw.Write([]byte(key))
+		done(http.StatusOK, nil)
+		return
+	}
 
 	// check if the request has been cancelled
 	if r.Context().Err() != nil {
