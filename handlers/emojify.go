@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"  // import image
@@ -94,7 +95,7 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if r.Context().Err() != nil {
 		// finished release the worker
 		e.releaseWorker()
-		done(http.StatusGone, nil)
+		done(http.StatusGone, errors.New("Client disconnected"))
 		return
 	}
 
@@ -103,7 +104,7 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e.releaseWorker()
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		done(http.StatusInternalServerError, nil)
+		done(http.StatusInternalServerError, err)
 		return
 	}
 
