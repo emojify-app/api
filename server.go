@@ -95,7 +95,7 @@ func main() {
 	cacheClient := cache.NewCacheClient(conn)
 
 	f := emojify.NewFetcher()
-	e := emojify.NewEmojify(f, *faceboxAddress, "./images/", int32(*faceboxWorkers), *faceboxWorkerTimeout)
+	e := emojify.NewEmojify(f, *faceboxAddress, "./images/")
 
 	ch := handlers.NewCache(logger, cacheClient)
 	cacheRouter.Handle("/{file}", ch).Methods("GET")

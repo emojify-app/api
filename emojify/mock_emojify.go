@@ -27,23 +27,17 @@ func (m *MockEmojify) Emojimise(src image.Image, faces []facebox.Face) (image.Im
 }
 
 // GetFaces is a mock implementation of the interface function
-func (m *MockEmojify) GetFaces(r io.ReadSeeker, ret chan FindFaceResponse) {
+func (m *MockEmojify) GetFaces(r io.ReadSeeker) ([]facebox.Face, error) {
 	args := m.Called(r)
 
-	go func() {
-		// wait for the client to block
-		time.Sleep(10 * time.Millisecond)
+	// wait for the client to block
+	time.Sleep(10 * time.Millisecond)
 
-		if args.Get(0) == nil {
-			ret <- FindFaceResponse{nil, args.Error(1)}
-			return
-		}
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 
-		ret <- FindFaceResponse{
-			args.Get(0).([]facebox.Face),
-			args.Error(1),
-		}
-	}()
+	return args.Get(0).([]facebox.Face), args.Error(1)
 }
 
 // Health is a mock implementation of the interface function
