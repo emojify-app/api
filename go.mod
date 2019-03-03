@@ -19,6 +19,7 @@ require (
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/pprof v0.0.0-20190208070709-b421f19a5c07 // indirect
 	github.com/googleapis/gax-go v2.0.2+incompatible // indirect
+	github.com/gophercloud/gophercloud v0.0.0-20190302030157-71f66c291395
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gorilla/mux v1.7.0
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
@@ -54,6 +55,7 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/shurcooL/webdavfs v0.0.0-20181215192745-5988b2d638f6 // indirect
 	github.com/sirupsen/logrus v1.3.0 // indirect
+	github.com/smartystreets/goconvey v0.0.0-20190222223459-a17d461953aa // indirect
 	github.com/stamblerre/gocode v0.0.0-20190213022308-8cc90faaf476 // indirect
 	github.com/stretchr/testify v1.3.0
 	go.opencensus.io v0.19.0 // indirect

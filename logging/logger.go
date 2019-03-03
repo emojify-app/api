@@ -43,7 +43,7 @@ type Finished func(status int, err error)
 
 // New creates a new logger with the given name and points it at a statsd server
 func New(name, version, statsDServer, logLevel string, logFormat string) (Logger, error) {
-	o := hclog.DefaultOptions
+	o := &hclog.LoggerOptions{}
 	o.Name = name
 
 	// set the log format
@@ -107,7 +107,12 @@ func (l *LoggerImpl) CacheHandlerCalled(r *http.Request) Finished {
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"cache.called", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Error("Cache handler finished", "status", status)
+		if err != nil {
+			l.l.Error("Cache handler finished", "status", status, "error", err)
+			return
+		}
+
+		l.l.Debug("Cache handler finished", "status", status)
 	}
 }
 
@@ -146,7 +151,7 @@ func (l *LoggerImpl) EmojifyHandlerCalled(r *http.Request) Finished {
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.called", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Info("Emojify handler finished", "status", status)
+		l.l.Debug("Emojify handler finished", "status", status)
 	}
 }
 

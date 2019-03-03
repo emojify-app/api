@@ -21,13 +21,13 @@ func init() {
 
 // Emojify defines an interface for emojify operations
 type Emojify interface {
-	Emojimise(image.Image, []facebox.Face) (image.Image, error)
 	GetFaces(f io.ReadSeeker) ([]facebox.Face, error)
+	Emojimise(image.Image, []facebox.Face) (image.Image, error)
 	Health() (*boxutil.Info, error)
 }
 
-// EmojifyImpl implements the Emojify interface
-type EmojifyImpl struct {
+// Impl implements the Emojify interface
+type Impl struct {
 	emojis         []image.Image
 	fetcher        Fetcher
 	fb             *facebox.Client
@@ -39,17 +39,28 @@ func NewEmojify(fetcher Fetcher, address, imagePath string) Emojify {
 	emojis := loadEmojis(imagePath)
 
 	fb := facebox.New(fmt.Sprintf("http://%s", address))
-	fb.HTTPClient.Timeout = 30000 * time.Millisecond
+	fb.HTTPClient.Timeout = 60 * time.Second
 
-	return &EmojifyImpl{
+	return &Impl{
 		emojis:  emojis,
 		fetcher: fetcher,
 		fb:      fb,
 	}
 }
 
+// GetFaces finds the faces in an image
+func (e *Impl) GetFaces(r io.ReadSeeker) ([]facebox.Face, error) {
+	_, err := r.Seek(0, os.SEEK_SET)
+	if err != nil {
+		return nil, err
+	}
+
+	// ok to continue
+	return e.fb.Check(r)
+}
+
 // Emojimise detects faces in an image and replaces them with emoji
-func (e *EmojifyImpl) Emojimise(src image.Image, faces []facebox.Face) (image.Image, error) {
+func (e *Impl) Emojimise(src image.Image, faces []facebox.Face) (image.Image, error) {
 	dstImage := image.NewRGBA(src.Bounds())
 	draw.Draw(dstImage, src.Bounds(), src, image.ZP, draw.Src)
 
@@ -68,22 +79,12 @@ func (e *EmojifyImpl) Emojimise(src image.Image, faces []facebox.Face) (image.Im
 	return dstImage, nil
 }
 
-// GetFaces finds the faces in an image
-func (e *EmojifyImpl) GetFaces(r io.ReadSeeker) ([]facebox.Face, error) {
-	_, err := r.Seek(0, os.SEEK_SET)
-	if err != nil {
-		return nil, err
-	}
-
-	return e.fb.Check(r)
-}
-
 // Health returns health info about facebox
-func (e *EmojifyImpl) Health() (*boxutil.Info, error) {
+func (e *Impl) Health() (*boxutil.Info, error) {
 	return e.fb.Info()
 }
 
-func (e *EmojifyImpl) randomEmoji() image.Image {
+func (e *Impl) randomEmoji() image.Image {
 	return e.emojis[rand.Intn(len(e.emojis))]
 }
 
