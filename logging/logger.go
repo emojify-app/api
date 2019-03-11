@@ -9,7 +9,7 @@ import (
 	hclog "github.com/hashicorp/go-hclog"
 )
 
-var statsPrefix = "api.service."
+var statsPrefix = "service.api."
 
 // Logger defines an interface for common logging operations
 type Logger interface {
@@ -28,12 +28,6 @@ type Logger interface {
 	EmojifyHandlerNoPostBody()
 	EmojifyHandlerInvalidURL(uri string, err error)
 	EmojifyHandlerCacheCheck(key string) Finished
-	EmojifyHandlerFetchImage(uri string) Finished
-	EmojifyHandlerInvalidImage(uri string, err error)
-	EmojifyHandlerFindFaces(uri string) Finished
-	EmojifyHandlerEmojify(uri string) Finished
-	EmojifyHandlerImageEncodeError(uri string, err error)
-	EmojifyHandlerCachePut(uri string) Finished
 
 	Log() hclog.Logger
 }
@@ -178,78 +172,6 @@ func (l *LoggerImpl) EmojifyHandlerCacheCheck(key string) Finished {
 
 		if err != nil {
 			l.l.Error("Error checking cache", "handler", "emojify", "key", key, "error", err)
-		}
-	}
-}
-
-// EmojifyHandlerFetchImage logs information about a remote fetch for the image
-func (l *LoggerImpl) EmojifyHandlerFetchImage(uri string) Finished {
-	st := time.Now()
-	l.l.Debug("Fetching file", "handler", "emojify", "uri", uri)
-
-	return func(status int, err error) {
-		l.s.Timing(statsPrefix+"emojify.fetch_file", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Debug("Fetching file finished", "handler", "emojify", "status", status)
-
-		if err != nil {
-			l.l.Error("Error fetching file", "handler", "emojify", "status", status, "uri", uri, "error", err)
-		}
-	}
-}
-
-// EmojifyHandlerInvalidImage logs information when an invalid image is returned from the fetch
-func (l *LoggerImpl) EmojifyHandlerInvalidImage(uri string, err error) {
-	l.l.Error("Invalid image format", "handler", "emojify", "uri", uri, "error", err)
-	l.s.Incr(statsPrefix+"emojify.invalid_image", nil, 1)
-}
-
-// EmojifyHandlerFindFaces logs information related to the face lookup call
-func (l *LoggerImpl) EmojifyHandlerFindFaces(uri string) Finished {
-	st := time.Now()
-	l.l.Debug("Find faces in image", "handler", "emojify", "uri", uri)
-
-	return func(status int, err error) {
-		l.s.Timing(statsPrefix+"emojify.find_faces", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Debug("Find faces finished", "handler", "emojify", "status", status)
-
-		if err != nil {
-			l.l.Error("Unable to find faces", "handler", "emojify", "uri", uri, "error", err)
-		}
-	}
-}
-
-// EmojifyHandlerEmojify logs information when emojifying the image
-func (l *LoggerImpl) EmojifyHandlerEmojify(uri string) Finished {
-	st := time.Now()
-	l.l.Debug("Emojify image", "handler", "emojify", "uri", uri)
-
-	return func(status int, err error) {
-		l.s.Timing(statsPrefix+"emojify.find_faces", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Debug("Find faces finished", "handler", "emojify", "status", status)
-
-		if err != nil {
-			l.l.Error("Unable to emojify", "handler", "emojify", "uri", uri, "error", err)
-		}
-	}
-}
-
-// EmojifyHandlerImageEncodeError logs information when an image encode error occurs
-func (l *LoggerImpl) EmojifyHandlerImageEncodeError(uri string, err error) {
-	l.l.Error("Unable to encode file as png", "handler", "emojify", "uri", uri, "error", err)
-	l.s.Incr(statsPrefix+"emojify.image_encode_error", nil, 1)
-}
-
-// EmojifyHandlerCachePut logs information when an image is pushed to the cache
-func (l *LoggerImpl) EmojifyHandlerCachePut(uri string) Finished {
-	st := time.Now()
-	l.l.Debug("Cache image", "handler", "emojify", "uri", uri)
-
-	return func(status int, err error) {
-		l.s.Timing(statsPrefix+"emojify.cache_put", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Debug("Cache image finished", "handler", "emojify", "status", status)
-
-		if err != nil {
-			l.l.Error("Unable to save image to cache", "handler", "emojify", "uri", uri, "error", err)
 		}
 	}
 }
