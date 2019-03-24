@@ -107,7 +107,7 @@ func (l *LoggerImpl) CacheHandlerCalled(r *http.Request) Finished {
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"cache.called", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Error("Cache handler finished", "status", status)
+		l.l.Debug("Cache handler finished", "status", status)
 	}
 }
 
@@ -146,7 +146,7 @@ func (l *LoggerImpl) EmojifyHandlerCalled(r *http.Request) Finished {
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.called", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Info("Emojify handler finished", "status", status)
+		l.l.Debug("Emojify handler finished", "status", status)
 	}
 }
 
