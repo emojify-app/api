@@ -20,3 +20,6 @@ run_consul:
 
 run_test_functional:
 	docker run --rm -p 9090:9090 -p 9091:9091 -e BIND_ADDRESS=0.0.0.0 nicholasjackson/emojify-cache:v0.3.4
+
+goconvey:
+	goconvey -excludedDirs=dist,images
