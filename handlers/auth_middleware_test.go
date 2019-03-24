@@ -28,6 +28,7 @@ func dummyValidate(jwt string) (string, error) {
 
 func setupAuthMiddleware() (*httptest.ResponseRecorder, *http.Request, http.Handler) {
 	logger := hclog.Default()
+	logger.SetLevel(hclog.Error)
 	dummyParameters = ""
 	dummyError = nil
 	dummyNextCalled = false

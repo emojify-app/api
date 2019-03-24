@@ -3,12 +3,14 @@ package emojify
 import (
 	"image"
 	"io"
+	"time"
 
 	"github.com/machinebox/sdk-go/boxutil"
 	"github.com/machinebox/sdk-go/facebox"
 	"github.com/stretchr/testify/mock"
 )
 
+// MockEmojify is a mock implementation of the Emojify interface
 type MockEmojify struct {
 	mock.Mock
 }
@@ -27,6 +29,9 @@ func (m *MockEmojify) Emojimise(src image.Image, faces []facebox.Face) (image.Im
 // GetFaces is a mock implementation of the interface function
 func (m *MockEmojify) GetFaces(r io.ReadSeeker) ([]facebox.Face, error) {
 	args := m.Called(r)
+
+	// wait for the client to block
+	time.Sleep(10 * time.Millisecond)
 
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
