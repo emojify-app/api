@@ -8,6 +8,7 @@ require (
 	github.com/golang/protobuf v1.3.0
 	github.com/gorilla/mux v1.7.0
 	github.com/hashicorp/go-hclog v0.8.0
+	github.com/kr/pretty v0.1.0
 	github.com/rs/cors v1.6.0
 	github.com/stretchr/testify v1.3.0
 	google.golang.org/grpc v1.19.0

@@ -17,26 +17,26 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 )
 
-// Emojify is a http.Handler for Emojifying images
-type Emojify struct {
+// EmojifyPost is a http.Handler for Emojifying images
+type EmojifyPost struct {
 	logger  logging.Logger
 	emojify emojify.EmojifyClient
 	cache   cache.CacheClient
 }
 
-// NewEmojify returns a new instance of the Emojify handler
-func NewEmojify(l logging.Logger, e emojify.EmojifyClient, c cache.CacheClient) *Emojify {
-	return &Emojify{l, e, c}
+// NewEmojifyPost returns a new instance of the Emojify handler
+func NewEmojifyPost(l logging.Logger, e emojify.EmojifyClient, c cache.CacheClient) *EmojifyPost {
+	return &EmojifyPost{l, e, c}
 }
 
 // ServeHTTP implements the handler function
-func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (e *EmojifyPost) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	done := e.logger.EmojifyHandlerCalled(r)
 
 	// check the post body
 	data, err := e.checkPostBody(r)
 	if err != nil {
-		rw.WriteHeader(http.StatusBadRequest)
+		http.Error(rw, err.Error(), http.StatusBadRequest)
 		done(http.StatusBadRequest, err)
 		return
 	}
@@ -60,17 +60,19 @@ func (e *Emojify) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// cache found message if ok
 	if ok {
+		rw.WriteHeader(http.StatusNotModified)
 		rw.Write([]byte(key))
-		done(http.StatusOK, nil)
+		done(http.StatusNotModified, nil)
 		return
 	}
 
 	// return the image key
-	rw.Write([]byte(key))
-	done(http.StatusOK, nil)
+	rw.WriteHeader(http.StatusTeapot)
+	//rw.Write([]byte(key))
+	//done(http.StatusOK, nil)
 }
 
-func (e *Emojify) checkPostBody(r *http.Request) ([]byte, error) {
+func (e *EmojifyPost) checkPostBody(r *http.Request) ([]byte, error) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		e.logger.EmojifyHandlerNoPostBody()
@@ -80,7 +82,7 @@ func (e *Emojify) checkPostBody(r *http.Request) ([]byte, error) {
 	return data, nil
 }
 
-func (e *Emojify) validateURL(data []byte) (*url.URL, error) {
+func (e *EmojifyPost) validateURL(data []byte) (*url.URL, error) {
 	valid := govalidator.IsRequestURL(string(data))
 	if valid == false {
 		return nil, fmt.Errorf("%v is not a valid URL", string(data))
@@ -95,7 +97,7 @@ func (e *Emojify) validateURL(data []byte) (*url.URL, error) {
 	return u, nil
 }
 
-func (e *Emojify) checkCache(key string) (bool, error) {
+func (e *EmojifyPost) checkCache(key string) (bool, error) {
 	ccDone := e.logger.EmojifyHandlerCacheCheck(key)
 	ok, err := e.cache.Exists(context.Background(), &wrappers.StringValue{Value: key})
 
