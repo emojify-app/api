@@ -5,10 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/emojify-app/api/emojify"
 	"github.com/emojify-app/api/logging"
 	"github.com/emojify-app/cache/protos/cache"
-	"github.com/machinebox/sdk-go/boxutil"
+	"github.com/emojify-app/emojify/protos/emojify"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -18,13 +17,13 @@ func setupHealthTests() (*Health, *httptest.ResponseRecorder, *http.Request) {
 	r := httptest.NewRequest("GET", "/health", nil)
 	l, _ := logging.New("test", "test", "localhost:8125", "error", "text")
 
-	em := &emojify.MockEmojify{}
-	em.On("Health", mock.Anything).Return(&boxutil.Info{}, nil)
+	ec := &emojify.ClientMock{}
+	ec.On("Check", mock.Anything, mock.Anything, mock.Anything).Return(&emojify.HealthCheckResponse{Status: emojify.HealthCheckResponse_SERVING}, nil)
 
 	cc := &cache.ClientMock{}
 	cc.On("Check", mock.Anything, mock.Anything, mock.Anything).Return(&cache.HealthCheckResponse{Status: cache.HealthCheckResponse_SERVING}, nil)
 
-	return &Health{l, em, cc}, rw, r
+	return &Health{l, ec, cc}, rw, r
 }
 
 func TestHealthHandlerReturnsOK(t *testing.T) {

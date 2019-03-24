@@ -5,35 +5,28 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/emojify-app/api/emojify"
 	"github.com/emojify-app/api/logging"
 	"github.com/emojify-app/cache/protos/cache"
+	"github.com/emojify-app/emojify/protos/emojify"
 	"google.golang.org/grpc/status"
 )
 
 // Health is a HTTP handler for serving health requests
 type Health struct {
 	logger logging.Logger
-	em     emojify.Emojify
+	ec     emojify.EmojifyClient
 	cc     cache.CacheClient
 }
 
 // NewHealth returns a new instance of the Health handler
-func NewHealth(l logging.Logger, em emojify.Emojify, cc cache.CacheClient) *Health {
-	return &Health{l, em, cc}
+func NewHealth(l logging.Logger, ec emojify.EmojifyClient, cc cache.CacheClient) *Health {
+	return &Health{l, ec, cc}
 }
 
 // ServeHTTP implements the http.Handler interface
 func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	done := h.logger.HealthHandlerCalled()
 	defer done(http.StatusOK, nil)
-
-	// check facebox health
-	info, err := h.em.Health()
-	if err != nil {
-		http.Error(rw, fmt.Sprintf("Error checking facebox health %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
 
 	// check cache health
 	resp, err := h.cc.Check(context.Background(), &cache.HealthCheckRequest{})
@@ -43,6 +36,5 @@ func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	rw.Write([]byte("OK\n"))
-	rw.Write([]byte(fmt.Sprintf("Facebox version: %d\n", info.Version)))
 	rw.Write([]byte(fmt.Sprintf("Cache status %d\n", resp.GetStatus())))
 }
