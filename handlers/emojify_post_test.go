@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -12,9 +13,10 @@ import (
 	"github.com/emojify-app/cache/protos/cache"
 	"github.com/emojify-app/emojify/protos/emojify"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/kr/pretty"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var mockEmojifyer emojify.ClientMock
@@ -24,7 +26,11 @@ func resetCacheMock() {
 	mockCache.ExpectedCalls = make([]*mock.Call, 0)
 }
 
-func setupEmojiHandler() (*httptest.ResponseRecorder, *http.Request, *EmojifyPost) {
+func resetEmojifyMock() {
+	mockEmojifyer.ExpectedCalls = make([]*mock.Call, 0)
+}
+
+func setupEmojiPostHandler() (*httptest.ResponseRecorder, *http.Request, *EmojifyPost) {
 	mockEmojifyer = emojify.ClientMock{}
 	mockCache = cache.ClientMock{}
 
@@ -35,6 +41,21 @@ func setupEmojiHandler() (*httptest.ResponseRecorder, *http.Request, *EmojifyPos
 		mock.Anything,
 	).Return(
 		&wrappers.BoolValue{Value: false},
+		nil,
+	)
+
+	mockEmojifyer.On(
+		"Create",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		&emojify.QueryItem{
+			Id:            "abc",
+			QueuePosition: 2,
+			QueueLength:   4,
+			Status:        &emojify.QueryStatus{Status: emojify.QueryStatus_QUEUED},
+		},
 		nil,
 	)
 
@@ -49,7 +70,7 @@ func setupEmojiHandler() (*httptest.ResponseRecorder, *http.Request, *EmojifyPos
 }
 
 func TestReturnsBadRequestIfBodyLessThan8(t *testing.T) {
-	rw, r, h := setupEmojiHandler()
+	rw, r, h := setupEmojiPostHandler()
 
 	h.ServeHTTP(rw, r)
 
@@ -58,7 +79,7 @@ func TestReturnsBadRequestIfBodyLessThan8(t *testing.T) {
 }
 
 func TestReturnsInvalidURLIfBodyNotURL(t *testing.T) {
-	rw, r, h := setupEmojiHandler()
+	rw, r, h := setupEmojiPostHandler()
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte("httsddfdfdf/cc")))
 
 	h.ServeHTTP(rw, r)
@@ -68,7 +89,7 @@ func TestReturnsInvalidURLIfBodyNotURL(t *testing.T) {
 }
 
 func TestReturns302IfImageIsCached(t *testing.T) {
-	rw, r, h := setupEmojiHandler()
+	rw, r, h := setupEmojiPostHandler()
 
 	u, _ := url.Parse(fileURL)
 	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(u.String())))
@@ -84,13 +105,43 @@ func TestReturns302IfImageIsCached(t *testing.T) {
 		nil,
 	)
 
-	pretty.Println(mockCache.ExpectedCalls)
-
 	h.ServeHTTP(rw, r)
 
 	assert.Equal(t, http.StatusNotModified, rw.Code)
 }
 
-func TestCallsEmojifyIfNotCached(t *testing.T) {
+func TestCallsEmojifyIfNotCachedAndOK(t *testing.T) {
+	rw, r, h := setupEmojiPostHandler()
 
+	u, _ := url.Parse(fileURL)
+	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(u.String())))
+	h.ServeHTTP(rw, r)
+
+	qi := EmojifyResponse{}
+	json.Unmarshal(rw.Body.Bytes(), &qi)
+
+	assert.Equal(t, "abc", qi.ID)
+	assert.Equal(t, int32(2), qi.Position)
+	assert.Equal(t, int32(4), qi.Length)
+}
+
+func TestCallsEmojifyIfNotCachedAndNotOK(t *testing.T) {
+	rw, r, h := setupEmojiPostHandler()
+	resetEmojifyMock()
+
+	mockEmojifyer.On(
+		"Create",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(
+		nil,
+		grpc.Errorf(codes.Internal, "Boom"),
+	)
+
+	u, _ := url.Parse(fileURL)
+	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(u.String())))
+	h.ServeHTTP(rw, r)
+
+	assert.Equal(t, http.StatusInternalServerError, rw.Code)
 }

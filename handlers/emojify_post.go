@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"         // import image
 	_ "image/png" // import image
 	"io"
@@ -16,6 +17,34 @@ import (
 	"github.com/emojify-app/emojify/protos/emojify"
 	"github.com/golang/protobuf/ptypes/wrappers"
 )
+
+// EmojifyResponse is a Go representation of the protobuf QueryItem
+// Status:
+// UNKNOWN  = 0
+// QUEUED   = 1
+// FINISHED = 2
+type EmojifyResponse struct {
+	ID       string `json:"id"`
+	Length   int32  `json:"length"`
+	Position int32  `json:"position"`
+	Status   string `json:"status"`
+}
+
+// FromQueryItem creates an EmojifyResponse from a emojify.QueryItem
+func (er EmojifyResponse) FromQueryItem(qi *emojify.QueryItem) EmojifyResponse {
+	return EmojifyResponse{
+		ID:       qi.GetId(),
+		Length:   qi.GetQueueLength(),
+		Position: qi.GetQueuePosition(),
+		Status:   qi.GetStatus().GetStatus().String(),
+	}
+}
+
+// WriteJSON writes the response as json to a writer
+func (er EmojifyResponse) WriteJSON(w io.Writer) {
+	e := json.NewEncoder(w)
+	e.Encode(&er)
+}
 
 // EmojifyPost is a http.Handler for Emojifying images
 type EmojifyPost struct {
@@ -66,10 +95,21 @@ func (e *EmojifyPost) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// not in cache call emojify
+	ecDone := e.logger.EmojifyHandlerCallCreate(u.String())
+	resp, err := e.emojify.Create(context.Background(), &wrappers.StringValue{Value: u.String()})
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		ecDone(http.StatusInternalServerError, err)
+		done(http.StatusInternalServerError, err)
+		return
+	}
+
 	// return the image key
-	rw.WriteHeader(http.StatusTeapot)
-	//rw.Write([]byte(key))
-	//done(http.StatusOK, nil)
+	jr := EmojifyResponse{}.FromQueryItem(resp)
+	rw.WriteHeader(http.StatusOK)
+	jr.WriteJSON(rw)
+	done(http.StatusOK, nil)
 }
 
 func (e *EmojifyPost) checkPostBody(r *http.Request) ([]byte, error) {
