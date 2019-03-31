@@ -18,6 +18,7 @@ import (
 
 var fileURL = "http://something.com/a.jpg"
 var base64URL string
+var mockCache cache.ClientMock
 
 func setupCacheHandler() (*httptest.ResponseRecorder, *http.Request, *Cache) {
 	mockCache = cache.ClientMock{}

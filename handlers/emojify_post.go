@@ -13,7 +13,6 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/emojify-app/api/logging"
-	"github.com/emojify-app/cache/protos/cache"
 	"github.com/emojify-app/emojify/protos/emojify"
 	"github.com/golang/protobuf/ptypes/wrappers"
 )
@@ -50,12 +49,11 @@ func (er EmojifyResponse) WriteJSON(w io.Writer) {
 type EmojifyPost struct {
 	logger  logging.Logger
 	emojify emojify.EmojifyClient
-	cache   cache.CacheClient
 }
 
 // NewEmojifyPost returns a new instance of the Emojify handler
-func NewEmojifyPost(l logging.Logger, e emojify.EmojifyClient, c cache.CacheClient) *EmojifyPost {
-	return &EmojifyPost{l, e, c}
+func NewEmojifyPost(l logging.Logger, e emojify.EmojifyClient) *EmojifyPost {
+	return &EmojifyPost{l, e}
 }
 
 // ServeHTTP implements the handler function
@@ -78,24 +76,6 @@ func (e *EmojifyPost) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check the cache
-	key := hashFilename(u.String())
-	ok, err := e.checkCache(key)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		done(http.StatusInternalServerError, nil)
-		return
-	}
-
-	// cache found message if ok
-	if ok {
-		rw.WriteHeader(http.StatusNotModified)
-		rw.Write([]byte(key))
-		done(http.StatusNotModified, nil)
-		return
-	}
-
-	// not in cache call emojify
 	ecDone := e.logger.EmojifyHandlerCallCreate(u.String())
 	resp, err := e.emojify.Create(context.Background(), &wrappers.StringValue{Value: u.String()})
 	if err != nil {
@@ -135,25 +115,6 @@ func (e *EmojifyPost) validateURL(data []byte) (*url.URL, error) {
 	}
 
 	return u, nil
-}
-
-func (e *EmojifyPost) checkCache(key string) (bool, error) {
-	ccDone := e.logger.EmojifyHandlerCacheCheck(key)
-	ok, err := e.cache.Exists(context.Background(), &wrappers.StringValue{Value: key})
-
-	if err != nil {
-		ccDone(http.StatusInternalServerError, err)
-		return false, err
-	}
-
-	// log cache file not found
-	if !ok.Value {
-		ccDone(http.StatusNotFound, nil)
-		return false, nil
-	}
-
-	ccDone(http.StatusOK, nil)
-	return true, err
 }
 
 // hashFilename returns a md5 hash of the filename

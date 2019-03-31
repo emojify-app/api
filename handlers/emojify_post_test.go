@@ -10,9 +10,7 @@ import (
 	"testing"
 
 	"github.com/emojify-app/api/logging"
-	"github.com/emojify-app/cache/protos/cache"
 	"github.com/emojify-app/emojify/protos/emojify"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
@@ -20,11 +18,6 @@ import (
 )
 
 var mockEmojifyer emojify.ClientMock
-var mockCache cache.ClientMock
-
-func resetCacheMock() {
-	mockCache.ExpectedCalls = make([]*mock.Call, 0)
-}
 
 func resetEmojifyMock() {
 	mockEmojifyer.ExpectedCalls = make([]*mock.Call, 0)
@@ -32,17 +25,6 @@ func resetEmojifyMock() {
 
 func setupEmojiPostHandler() (*httptest.ResponseRecorder, *http.Request, *EmojifyPost) {
 	mockEmojifyer = emojify.ClientMock{}
-	mockCache = cache.ClientMock{}
-
-	mockCache.On(
-		"Exists",
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-	).Return(
-		&wrappers.BoolValue{Value: false},
-		nil,
-	)
 
 	mockEmojifyer.On(
 		"Create",
@@ -64,7 +46,7 @@ func setupEmojiPostHandler() (*httptest.ResponseRecorder, *http.Request, *Emojif
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("POST", "/", nil)
 
-	h := NewEmojifyPost(logger, &mockEmojifyer, &mockCache)
+	h := NewEmojifyPost(logger, &mockEmojifyer)
 
 	return rw, r, h
 }
@@ -88,29 +70,7 @@ func TestReturnsInvalidURLIfBodyNotURL(t *testing.T) {
 	assert.Equal(t, "httsddfdfdf/cc is not a valid URL\n", string(rw.Body.Bytes()))
 }
 
-func TestReturns302IfImageIsCached(t *testing.T) {
-	rw, r, h := setupEmojiPostHandler()
-
-	u, _ := url.Parse(fileURL)
-	r.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(u.String())))
-
-	resetCacheMock()
-	mockCache.On(
-		"Exists",
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-	).Return(
-		&wrappers.BoolValue{Value: true},
-		nil,
-	)
-
-	h.ServeHTTP(rw, r)
-
-	assert.Equal(t, http.StatusNotModified, rw.Code)
-}
-
-func TestCallsEmojifyIfNotCachedAndOK(t *testing.T) {
+func TestCallsEmojifyAndOK(t *testing.T) {
 	rw, r, h := setupEmojiPostHandler()
 
 	u, _ := url.Parse(fileURL)
@@ -125,7 +85,7 @@ func TestCallsEmojifyIfNotCachedAndOK(t *testing.T) {
 	assert.Equal(t, int32(4), qi.Length)
 }
 
-func TestCallsEmojifyIfNotCachedAndNotOK(t *testing.T) {
+func TestCallsEmojifyAndNotOK(t *testing.T) {
 	rw, r, h := setupEmojiPostHandler()
 	resetEmojifyMock()
 

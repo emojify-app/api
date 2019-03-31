@@ -27,7 +27,6 @@ type Logger interface {
 	EmojifyHandlerCalled(r *http.Request) Finished
 	EmojifyHandlerNoPostBody()
 	EmojifyHandlerInvalidURL(uri string, err error)
-	EmojifyHandlerCacheCheck(key string) Finished
 	EmojifyHandlerCallCreate(uri string) Finished
 
 	Log() hclog.Logger
@@ -160,21 +159,6 @@ func (l *LoggerImpl) EmojifyHandlerNoPostBody() {
 func (l *LoggerImpl) EmojifyHandlerInvalidURL(uri string, err error) {
 	l.l.Error("Unable to validate URI", "handler", "emojify", "uri", uri, "error", err)
 	l.s.Incr(statsPrefix+"emojify.invalid_uri", nil, 1)
-}
-
-// EmojifyHandlerCacheCheck logs information about a cache check
-func (l *LoggerImpl) EmojifyHandlerCacheCheck(key string) Finished {
-	st := time.Now()
-	l.l.Debug("Checking cache", "handler", "emojify", "key", key)
-
-	return func(status int, err error) {
-		l.s.Timing(statsPrefix+"emojify.cache_check", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Debug("Emojify cache finished", "handler", "emojify", "status", status)
-
-		if err != nil {
-			l.l.Error("Error checking cache", "handler", "emojify", "key", key, "error", err)
-		}
-	}
 }
 
 // EmojifyHandlerCallCreate logs information when the Emojify upstream create method is called

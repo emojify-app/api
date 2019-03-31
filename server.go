@@ -107,8 +107,10 @@ func main() {
 	ch := handlers.NewCache(logger, cacheClient)
 	cacheRouter.Handle("/{file}", ch).Methods("GET")
 
-	eh := handlers.NewEmojifyPost(logger, emojifyClient, cacheClient)
-	emojifyRouter.Handle("/", eh).Methods("POST")
+	ehp := handlers.NewEmojifyPost(logger, emojifyClient)
+	ehg := handlers.NewEmojifyGet(logger, emojifyClient)
+	emojifyRouter.Handle("/{id}", ehg).Methods("GET")
+	emojifyRouter.Handle("/", ehp).Methods("POST")
 
 	// Setup error injection for testing
 	if *cacheErrorRate != 0.0 {
