@@ -84,6 +84,11 @@ func (l *LoggerImpl) HealthHandlerCalled() Finished {
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"health.called", time.Now().Sub(st), nil, 1)
+		if err != nil {
+			l.l.Error("Health handler error", "status", status, "error", err)
+			return
+		}
+
 		l.l.Debug("Health handler finished", "status", status)
 	}
 }
