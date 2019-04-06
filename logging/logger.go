@@ -28,6 +28,7 @@ type Logger interface {
 	EmojifyHandlerNoPostBody()
 	EmojifyHandlerInvalidURL(uri string, err error)
 	EmojifyHandlerCallCreate(uri string) Finished
+	EmojifyHandlerCallQuery(id string) Finished
 
 	Log() hclog.Logger
 }
@@ -169,6 +170,17 @@ func (l *LoggerImpl) EmojifyHandlerCallCreate(uri string) Finished {
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.create.called", time.Now().Sub(st), getStatusTags(status), 1)
 		l.l.Debug("Emojify upstream create finished", "URI", uri, "status", status)
+	}
+}
+
+// EmojifyHandlerCallQuery logs information when the Emojify upstream query method is called
+func (l *LoggerImpl) EmojifyHandlerCallQuery(id string) Finished {
+	st := time.Now()
+	l.l.Debug("Emojify upstream query called", "ID", id)
+
+	return func(status int, err error) {
+		l.s.Timing(statsPrefix+"emojify.query.called", time.Now().Sub(st), getStatusTags(status), 1)
+		l.l.Debug("Emojify upstream query finished", "ID", id, "status", status)
 	}
 }
 
