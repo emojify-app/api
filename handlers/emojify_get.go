@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/emojify-app/api/logging"
 	"github.com/emojify-app/emojify/protos/emojify"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/gorilla/mux"
 )
 
 // EmojifyGet is a http.Handler for querying the state of images
@@ -20,5 +23,20 @@ func NewEmojifyGet(l logging.Logger, e emojify.EmojifyClient) *EmojifyGet {
 
 // ServeHTTP implements the handler function
 func (e *EmojifyGet) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r) // Get varaibles from the request path
 
+	// check the parameters contains a valid url
+	id := vars["id"]
+	if id == "" {
+
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	qi, err := e.emojify.Query(context.Background(), &wrappers.StringValue{Value: id})
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	}
+
+	EmojifyResponse{}.FromQueryItem(qi).WriteJSON(rw)
 }
