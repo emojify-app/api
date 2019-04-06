@@ -66,7 +66,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.ServiceStart("localhost", "9090", version)
+	logger.ServiceStart(*bindAddress, version)
 	logger.Log().Info(
 		"Startup parameters",
 		"statsDServer", *statsDServer,

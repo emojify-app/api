@@ -13,7 +13,7 @@ var statsPrefix = "service.api."
 
 // Logger defines an interface for common logging operations
 type Logger interface {
-	ServiceStart(address, port, version string)
+	ServiceStart(address, version string)
 
 	HealthHandlerCalled() Finished
 
@@ -71,9 +71,9 @@ func (l *LoggerImpl) Log() hclog.Logger {
 }
 
 // ServiceStart logs information about the service start
-func (l *LoggerImpl) ServiceStart(address, port, version string) {
+func (l *LoggerImpl) ServiceStart(address, version string) {
 	l.s.Incr(statsPrefix+"started", nil, 1)
-	l.l.Info("Service started", "address", address, "port", port, "version", version)
+	l.l.Info("Service started", "address", address, "version", version)
 }
 
 // HealthHandlerCalled logs information when the health handler is called, the returned function

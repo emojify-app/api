@@ -26,23 +26,30 @@ func NewHealth(l logging.Logger, ec emojify.EmojifyClient, cc cache.CacheClient)
 // ServeHTTP implements the http.Handler interface
 func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	done := h.logger.HealthHandlerCalled()
-	defer done(http.StatusOK, nil)
 
 	// check cache health
 	resp, err := h.cc.Check(context.Background(), &cache.HealthCheckRequest{})
 	if s := status.Convert(err); err != nil && s != nil {
-		http.Error(rw, fmt.Sprintf("Error checking cache health %s", s.Message()), http.StatusInternalServerError)
+		errString := fmt.Sprintf("Error checking cache health %s", s.Message())
+
+		http.Error(rw, errString, http.StatusInternalServerError)
+		done(http.StatusInternalServerError, fmt.Errorf(errString))
 		return
 	}
 
 	// check emojify health
 	respE, err := h.ec.Check(context.Background(), &emojify.HealthCheckRequest{})
 	if s := status.Convert(err); err != nil && s != nil {
-		http.Error(rw, fmt.Sprintf("Error checking emojify health %s", s.Message()), http.StatusInternalServerError)
+		errString := fmt.Sprintf("Error checking emojify health %s", s.Message())
+
+		http.Error(rw, errString, http.StatusInternalServerError)
+		done(http.StatusInternalServerError, err)
 		return
 	}
 
 	rw.Write([]byte("OK\n"))
 	rw.Write([]byte(fmt.Sprintf("Cache status %d\n", resp.GetStatus())))
 	rw.Write([]byte(fmt.Sprintf("Emojify status %d\n", respE.GetStatus())))
+
+	done(http.StatusOK, nil)
 }
