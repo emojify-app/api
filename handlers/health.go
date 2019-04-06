@@ -35,6 +35,14 @@ func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check emojify health
+	respE, err := h.ec.Check(context.Background(), &emojify.HealthCheckRequest{})
+	if s := status.Convert(err); err != nil && s != nil {
+		http.Error(rw, fmt.Sprintf("Error checking emojify health %s", s.Message()), http.StatusInternalServerError)
+		return
+	}
+
 	rw.Write([]byte("OK\n"))
 	rw.Write([]byte(fmt.Sprintf("Cache status %d\n", resp.GetStatus())))
+	rw.Write([]byte(fmt.Sprintf("Emojify status %d\n", respE.GetStatus())))
 }
