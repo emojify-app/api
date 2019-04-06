@@ -28,28 +28,32 @@ func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	done := h.logger.HealthHandlerCalled()
 
 	// check cache health
-	resp, err := h.cc.Check(context.Background(), &cache.HealthCheckRequest{})
-	if s := status.Convert(err); err != nil && s != nil {
+	resp, errC := h.cc.Check(context.Background(), &cache.HealthCheckRequest{})
+	if s := status.Convert(errC); errC != nil && s != nil {
 		errString := fmt.Sprintf("Error checking cache health %s", s.Message())
 
-		http.Error(rw, errString, http.StatusInternalServerError)
-		done(http.StatusInternalServerError, fmt.Errorf(errString))
-		return
+		h.logger.Log().Error("Health handler error", "error", errString)
+		rw.Write([]byte(fmt.Sprintf("Cache status: %s\n", errString)))
+	} else {
+		rw.Write([]byte(fmt.Sprintf("Cache status: %d\n", resp.GetStatus())))
 	}
 
 	// check emojify health
-	respE, err := h.ec.Check(context.Background(), &emojify.HealthCheckRequest{})
-	if s := status.Convert(err); err != nil && s != nil {
+	respE, errE := h.ec.Check(context.Background(), &emojify.HealthCheckRequest{})
+	if s := status.Convert(errE); errE != nil && s != nil {
 		errString := fmt.Sprintf("Error checking emojify health %s", s.Message())
 
-		http.Error(rw, errString, http.StatusInternalServerError)
-		done(http.StatusInternalServerError, err)
-		return
+		h.logger.Log().Error("Health handler error", "error", errString)
+		rw.Write([]byte(fmt.Sprintf("Emojify status: %s\n", errString)))
+	} else {
+		rw.Write([]byte(fmt.Sprintf("Emojify status: %d\n", respE.GetStatus())))
 	}
 
-	rw.Write([]byte("OK\n"))
-	rw.Write([]byte(fmt.Sprintf("Cache status %d\n", resp.GetStatus())))
-	rw.Write([]byte(fmt.Sprintf("Emojify status %d\n", respE.GetStatus())))
+	if errC != nil || errE != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		done(http.StatusInternalServerError, nil)
+		return
+	}
 
 	done(http.StatusOK, nil)
 }
