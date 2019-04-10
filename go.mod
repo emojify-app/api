@@ -6,11 +6,12 @@ require (
 	dmitri.shuralyov.com/service/change v0.0.0-20190203163610-217368fe4577 // indirect
 	git.apache.org/thrift.git v0.12.0 // indirect
 	github.com/DATA-DOG/godog v0.7.10 // indirect
-	github.com/DataDog/datadog-go v0.0.0-20180822151419-281ae9f2d895
+	github.com/DataDog/datadog-go v0.0.0-20190409101831-be7ca570f91a
 	github.com/Shopify/sarama v1.20.1 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
 	github.com/coreos/go-systemd v0.0.0-20190212144455-93d5ec2c7f76 // indirect
 	github.com/emojify-app/cache v0.3.5
+	github.com/emojify-app/face-detection v0.0.0-20190409153044-33f15d904197
 	github.com/gliderlabs/ssh v0.1.3 // indirect
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/gogo/protobuf v1.2.1 // indirect
@@ -21,15 +22,14 @@ require (
 	github.com/googleapis/gax-go v2.0.2+incompatible // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20190302030157-71f66c291395
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
-	github.com/gorilla/mux v1.7.0
+	github.com/gorilla/mux v1.7.1
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.7.0 // indirect
-	github.com/hashicorp/go-hclog v0.7.0
+	github.com/hashicorp/go-hclog v0.8.0
 	github.com/keegancsmith/rpc v1.1.0 // indirect
 	github.com/keratin/authn-go v0.0.0-20180305155151-8ffae7b75297
 	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/machinebox/sdk-go v0.3.0
-	github.com/matryer/is v1.2.0 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.2 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/openzipkin/zipkin-go v0.1.5 // indirect

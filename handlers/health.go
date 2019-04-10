@@ -28,13 +28,6 @@ func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	done := h.logger.HealthHandlerCalled()
 	defer done(http.StatusOK, nil)
 
-	// check facebox health
-	info, err := h.em.Health()
-	if err != nil {
-		http.Error(rw, fmt.Sprintf("Error checking facebox health %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
-
 	// check cache health
 	resp, err := h.cc.Check(context.Background(), &cache.HealthCheckRequest{})
 	if s := status.Convert(err); err != nil && s != nil {
@@ -43,6 +36,5 @@ func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	rw.Write([]byte("OK\n"))
-	rw.Write([]byte(fmt.Sprintf("Facebox version: %d\n", info.Version)))
 	rw.Write([]byte(fmt.Sprintf("Cache status %d\n", resp.GetStatus())))
 }

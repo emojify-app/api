@@ -21,7 +21,6 @@ import (
 	"github.com/emojify-app/api/logging"
 	"github.com/emojify-app/cache/protos/cache"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/machinebox/sdk-go/facebox"
 )
 
 // Emojify is a http.Handler for Emojifying images
@@ -223,7 +222,7 @@ func (e *Emojify) fetchImage(uri string) (io.ReadSeeker, image.Image, error) {
 	return f, img, nil
 }
 
-func (e *Emojify) findFaces(uri string, r io.ReadSeeker) ([]facebox.Face, error) {
+func (e *Emojify) findFaces(uri string, r io.ReadSeeker) ([]image.Rectangle, error) {
 	ffDone := e.logger.EmojifyHandlerFindFaces(uri)
 	f, err := e.emojifyer.GetFaces(r)
 	if err != nil {
@@ -235,7 +234,7 @@ func (e *Emojify) findFaces(uri string, r io.ReadSeeker) ([]facebox.Face, error)
 	return f, nil
 }
 
-func (e *Emojify) processImage(uri string, faces []facebox.Face, img image.Image) ([]byte, error) {
+func (e *Emojify) processImage(uri string, faces []image.Rectangle, img image.Image) ([]byte, error) {
 	emDone := e.logger.EmojifyHandlerEmojify(uri)
 	i, err := e.emojifyer.Emojimise(img, faces)
 	if err != nil {

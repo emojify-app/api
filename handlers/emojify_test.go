@@ -15,7 +15,6 @@ import (
 	"github.com/emojify-app/api/logging"
 	"github.com/emojify-app/cache/protos/cache"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/machinebox/sdk-go/facebox"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/codes"
@@ -244,7 +243,7 @@ func TestReturnsInternalServerErrorWhenUnableToEmojify(t *testing.T) {
 		mock.Anything,
 		mock.Anything,
 	).Return(
-		make([]facebox.Face, 0),
+		make([]image.Rectangle, 0),
 		nil,
 	)
 
@@ -299,7 +298,7 @@ func TestReturnsInternalServiceErrorWhenUnableToSaveCache(t *testing.T) {
 		mock.Anything,
 		mock.Anything,
 	).Return(
-		make([]facebox.Face, 0),
+		make([]image.Rectangle, 0),
 		nil,
 	)
 
@@ -365,7 +364,7 @@ func TestReturnsStatusOKOnSuccess(t *testing.T) {
 		mock.Anything,
 		mock.Anything,
 	).Return(
-		make([]facebox.Face, 0),
+		make([]image.Rectangle, 0),
 		nil,
 	)
 
