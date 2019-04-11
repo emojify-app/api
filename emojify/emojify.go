@@ -31,7 +31,7 @@ type Emojify interface {
 type Impl struct {
 	emojis         []image.Image
 	fetcher        Fetcher
-	fd             *client.HTTPClient
+	fd             *client.FaceDetect
 	faceboxAddress string
 }
 
