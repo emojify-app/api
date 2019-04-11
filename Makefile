@@ -23,7 +23,7 @@ run_cache:
 	docker run --rm -p 9001:9090 -e BIND_ADDRESS=0.0.0.0 nicholasjackson/emojify-cache:v0.4.3
 
 run_facedetect:
-	docker run --rm -p 9002:9090 -e BIND_ADDRESS=0.0.0.0 nicholasjackson/emojify-facedetection:latest
+	docker run --rm -p 9002:9090 -e BIND_ADDRESS=0.0.0.0 nicholasjackson/emojify-facedetection:v0.1.2
 
 run_api:
 	go run server.go -authn-disable=true -allow-origin=* -facebox-address=localhost:9002 -cache-address=localhost:9001
