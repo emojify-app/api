@@ -21,6 +21,8 @@ github.com/emojify-app/face-detection v0.1.5 h1:ruHHbiJRUNpsnUW19HtCGfRClvH0Knvr
 github.com/emojify-app/face-detection v0.1.5/go.mod h1:EtjiFEUF5uGyJdRqyHUvqKp4jzQ3N6sj6AWNEXuL1pE=
 github.com/emojify-app/face-detection v0.1.6 h1:tS0JFSXaPdz32r+6o/HakhbFPbxKT+EENpn6lZS7Mwk=
 github.com/emojify-app/face-detection v0.1.6/go.mod h1:EtjiFEUF5uGyJdRqyHUvqKp4jzQ3N6sj6AWNEXuL1pE=
+github.com/emojify-app/face-detection v0.1.7 h1:SMFpBUTUeQcoqPBs0DZzjkYfIcEKVChg8LYQeMT+CuU=
+github.com/emojify-app/face-detection v0.1.7/go.mod h1:EtjiFEUF5uGyJdRqyHUvqKp4jzQ3N6sj6AWNEXuL1pE=
 github.com/envoyproxy/go-control-plane v0.6.9/go.mod h1:SBwIajubJHhxtWwsL9s8ss4safvEdbitLhGGK48rN6g=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/go-redis/redis v6.15.1+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=
