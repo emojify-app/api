@@ -22,7 +22,7 @@ var base64URL string
 func setupCacheHandler() (*httptest.ResponseRecorder, *http.Request, *Cache) {
 	mockCache = cache.ClientMock{}
 	base64URL = base64.StdEncoding.EncodeToString([]byte(fileURL))
-	logger, _ := logging.New("test", "test", "localhost:8125", "error", "text")
+	logger, _ := logging.New("test", "test", "localhost:8125", "error", "text", "")
 
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest(

@@ -16,7 +16,7 @@ import (
 func setupHealthTests() (*Health, *httptest.ResponseRecorder, *http.Request) {
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/health", nil)
-	l, _ := logging.New("test", "test", "localhost:8125", "error", "text")
+	l, _ := logging.New("test", "test", "localhost:8125", "error", "text", "")
 
 	em := &emojify.MockEmojify{}
 	em.On("Health", mock.Anything).Return(&boxutil.Info{}, nil)
