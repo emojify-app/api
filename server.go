@@ -31,7 +31,7 @@ func init() {
 var version = "dev"
 
 var bindAddress = env.String("BIND_ADDRESS", false, "localhost:9090", "Bind address for the server defaults to localhost:9090")
-var path = env.String("PATH", false, "/", "Path to mount API, defaults to /")
+var path = env.String("ROOT_PATH", false, "/", "Path to mount API, defaults to /")
 
 // authentication flags
 var redisLocation = env.String("REDIS_ADDRESS", false, "localhost:1234", "Location for the redis server")
@@ -80,9 +80,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.ServiceStart("localhost", "9090", version)
+	addressParts := strings.Split(*bindAddress, ":")
+	logger.ServiceStart(addressParts[0], addressParts[1], version)
 	logger.Log().Info(
 		"Startup parameters",
+		"path", *path,
 		"statsDServer", *statsDServer,
 		"allowedOrigin", *allowedOrigin,
 	)
