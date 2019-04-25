@@ -34,7 +34,7 @@ var bindAddress = env.String("BIND_ADDRESS", false, "localhost:9090", "Bind addr
 var path = env.String("PATH", false, "/", "Path to mount API, defaults to /")
 
 // authentication flags
-var redisLocation = env.String("REDIS_LOCATION", false, "localhost:1234", "Location for the redis server")
+var redisLocation = env.String("REDIS_ADDRESS", false, "localhost:1234", "Location for the redis server")
 var redisPassword = env.String("REDIS_PASSWORD", false, "", "Password for redis server")
 var allowedOrigin = env.String("ALLOW_ORIGIN", false, "*", "CORS origin")
 var authNServer = env.String("AUTHN_SERVER", false, "http://localhost:3000", "AuthN server location")
@@ -42,7 +42,7 @@ var audience = env.String("AUTHN_AUDIENCE", false, "emojify", "AuthN audience")
 var disableAuth = env.Bool("AUTHN_DISABLE", false, false, "Disable authn integration")
 
 // external service flags
-var statsDServer = env.String("STATSD_SERVER", false, "localhost:8125", "StatsD server location")
+var statsDServer = env.String("STATSD_ADDRESS", false, "localhost:8125", "StatsD server location")
 var faceboxAddress = env.String("FACEBOX_ADDRESS", false, "localhost:8080", "Address for the face detection service")
 var cacheAddress = env.String("CACHE_ADDRESS", false, "localhost", "Address for the Cache service")
 var paymentGatewayURI = env.String("PAYMENT_ADDRESS", false, "localhost", "Address for the Payment gateway service")
@@ -50,6 +50,7 @@ var paymentGatewayURI = env.String("PAYMENT_ADDRESS", false, "localhost", "Addre
 // logging settings
 var logFormat = env.String("LOG_FORMAT", false, "text", "Log output format [text,json]")
 var logLevel = env.String("LOG_LEVEL", false, "info", "Log output level [trace,info,debug,warn,error]")
+var logFile = env.String("LOG_FILE", false, "", "Log output to a file instead of StdOut")
 
 // performance testing flags
 // these flags allow the user to inject faults into the service for testing purposes
@@ -73,7 +74,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	logger, err := logging.New("api", version, *statsDServer, *logLevel, *logFormat)
+	logger, err := logging.New("api", version, *statsDServer, *logLevel, *logFormat, *logFile)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

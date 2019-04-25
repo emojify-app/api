@@ -3,6 +3,7 @@ package logging
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/DataDog/datadog-go/statsd"
@@ -42,13 +43,23 @@ type Logger interface {
 type Finished func(status int, err error)
 
 // New creates a new logger with the given name and points it at a statsd server
-func New(name, version, statsDServer, logLevel string, logFormat string) (Logger, error) {
+func New(name, version, statsDServer, logLevel, logFormat, logFile string) (Logger, error) {
 	o := &hclog.LoggerOptions{}
 	o.Name = name
 
 	// set the log format
 	if logFormat == "json" {
 		o.JSONFormat = true
+	}
+
+	// if a log file is specified do not use StdOut
+	if logFile != "" {
+		f, err := os.Create(logFile)
+		if err != nil {
+			return nil, err
+		}
+
+		o.Output = f
 	}
 
 	o.Level = hclog.LevelFromString(logLevel)
