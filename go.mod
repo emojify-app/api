@@ -13,6 +13,7 @@ require (
 	github.com/keratin/authn-go v0.0.0-20180305155151-8ffae7b75297
 	github.com/machinebox/sdk-go v0.3.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/nicholasjackson/env v0.5.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/rs/cors v1.6.0
 	github.com/stretchr/testify v1.3.0
