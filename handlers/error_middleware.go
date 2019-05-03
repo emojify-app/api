@@ -33,6 +33,7 @@ func NewErrorMiddleware(errorPercentage float64, errorCode int, errorDelay time.
 func (j *ErrorMiddleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		j.requestCount++
+		// if request count is greater than the max value for an integer reset
 		if j.requestCount == int(^uint(0)>>1) {
 			j.requestCount = 1
 		}
