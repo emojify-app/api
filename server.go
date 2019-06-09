@@ -34,12 +34,7 @@ var bindAddress = env.String("BIND_ADDRESS", false, "localhost:9090", "Bind addr
 var path = env.String("PATH", false, "/", "Path to mount API, defaults to /")
 
 // authentication flags
-var redisLocation = env.String("REDIS_LOCATION", false, "localhost:1234", "Location for the redis server")
-var redisPassword = env.String("REDIS_PASSWORD", false, "", "Password for redis server")
 var allowedOrigin = env.String("ALLOW_ORIGIN", false, "*", "CORS origin")
-var authNServer = env.String("AUTHN_SERVER", false, "http://localhost:3000", "AuthN server location")
-var audience = env.String("AUTHN_AUDIENCE", false, "emojify", "AuthN audience")
-var disableAuth = env.Bool("AUTHN_DISABLE", false, false, "Disable authn integration")
 
 // external service flags
 var statsDServer = env.String("STATSD_SERVER", false, "localhost:8125", "StatsD server location")
@@ -92,11 +87,9 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
+	//r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 
-	baseRouter := r.PathPrefix(*path).Subrouter()            // base subrouter with no middleware
-	emojifyRouter := r.PathPrefix(*path).Subrouter()         // handlers which require authentication
-	cacheRouter := r.PathPrefix(*path + "cache").Subrouter() // caching subrouter
+	cacheRouter := r.PathPrefix(*path + "cache").Subrouter() // base subrouter with no middleware
 
 	logger.Log().Info("Connecting to cache", "address", *cacheAddress)
 	cacheConn, err := grpc.Dial(*cacheAddress, grpc.WithInsecure())
@@ -115,15 +108,14 @@ func main() {
 	emojifyClient := emojify.NewEmojifyClient(emojifyConn)
 
 	hh := handlers.NewHealth(logger, emojifyClient, cacheClient)
-	baseRouter.Handle("/health", hh).Methods("GET")
-
 	ch := handlers.NewCache(logger, cacheClient)
-	cacheRouter.Handle("/{file}", ch).Methods("GET")
-
 	ehp := handlers.NewEmojifyPost(logger, emojifyClient)
 	ehg := handlers.NewEmojifyGet(logger, emojifyClient)
-	emojifyRouter.Handle("/{id}", ehg).Methods("GET")
-	emojifyRouter.Handle("/", ehp).Methods("POST")
+
+	r.Handle("/emojify/{id}", ehg).Methods("GET")
+	r.Handle("/emojify/", ehp).Methods("POST")
+	r.Handle("/health", hh).Methods("GET")
+	cacheRouter.Handle("/{file}", ch).Methods("GET")
 
 	// Setup error injection for testing
 	if *cacheErrorRate != 0.0 {
@@ -140,6 +132,7 @@ func main() {
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		Debug:            false,
 	})
+
 	handler := c.Handler(r)
 
 	err = http.ListenAndServe(*bindAddress, handler)

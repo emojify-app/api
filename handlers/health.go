@@ -47,8 +47,6 @@ func (h *Health) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte(fmt.Sprintf("Cache status: %d\n", respC.GetStatus())))
 	}
 
-	fmt.Println(errE)
-
 	if s := status.Convert(errE); errE != nil && s != nil {
 		errString := fmt.Sprintf("Error checking emojify health %s", s.Message())
 
