@@ -50,11 +50,13 @@ func (c *Cache) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// if the cache returns an error swallow this and return a 404 to the
+	// user
 	if err != nil {
 		cgd(http.StatusInternalServerError, err)
 		done(http.StatusInternalServerError, nil)
 
-		rw.WriteHeader(http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 
