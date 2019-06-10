@@ -33,7 +33,7 @@ func setupCacheHandler() (*httptest.ResponseRecorder, *http.Request, *Cache) {
 	)
 
 	// Set the gorilla mux vars for testing
-	r = mux.SetURLVars(r, map[string]string{"file": base64URL})
+	r = mux.SetURLVars(r, map[string]string{"id": base64URL})
 
 	h := &Cache{logger, &mockCache}
 
