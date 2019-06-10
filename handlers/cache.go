@@ -29,7 +29,7 @@ func (c *Cache) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r) // Get varaibles from the request path
 
 	// check the parameters contains a valid url
-	f := vars["file"]
+	f := vars["id"]
 	if f == "" {
 		c.logger.CacheHandlerBadRequest()
 		done(http.StatusBadRequest, nil)

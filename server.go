@@ -17,11 +17,7 @@ import (
 	"github.com/emojify-app/cache/protos/cache"
 	"github.com/emojify-app/emojify/protos/emojify"
 	"github.com/rs/cors"
-
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 )
 
 func init() {
@@ -31,7 +27,7 @@ func init() {
 var version = "dev"
 
 var bindAddress = env.String("BIND_ADDRESS", false, "localhost:9090", "Bind address for the server defaults to localhost:9090")
-var path = env.String("PATH", false, "/", "Path to mount API, defaults to /")
+var path = env.String("API_PATH", false, "/", "Path to mount API, defaults to /")
 
 // authentication flags
 var allowedOrigin = env.String("ALLOW_ORIGIN", false, "*", "CORS origin")
@@ -68,6 +64,7 @@ func main() {
 		os.Exit(0)
 	}
 
+	// configure the logger
 	logger, err := logging.New("api", version, *statsDServer, *logLevel, *logFormat)
 	if err != nil {
 		fmt.Println(err)
@@ -86,36 +83,45 @@ func main() {
 		*path = *path + "/"
 	}
 
-	r := mux.NewRouter()
-	//r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
+	logger.Log().Info("Api listening on", "path", *path)
 
-	cacheRouter := r.PathPrefix(*path + "cache").Subrouter() // base subrouter with no middleware
-
+	// create the cache client
 	logger.Log().Info("Connecting to cache", "address", *cacheAddress)
 	cacheConn, err := grpc.Dial(*cacheAddress, grpc.WithInsecure())
 	if err != nil {
-		logger.Log().Error("Unable to create gRPC client", err)
+		logger.Log().Error("Unable to create cache gRPC client", err)
 		os.Exit(1)
 	}
 	cacheClient := cache.NewCacheClient(cacheConn)
 
+	// create the emojify client
 	logger.Log().Info("Connecting to emojify", "address", *emojifyAddress)
 	emojifyConn, err := grpc.Dial(*emojifyAddress, grpc.WithInsecure())
 	if err != nil {
-		logger.Log().Error("Unable to create gRPC client", err)
+		logger.Log().Error("Unable to create emojify gRPC client", err)
 		os.Exit(1)
 	}
 	emojifyClient := emojify.NewEmojifyClient(emojifyConn)
 
+	// create handlers
 	hh := handlers.NewHealth(logger, emojifyClient, cacheClient)
 	ch := handlers.NewCache(logger, cacheClient)
 	ehp := handlers.NewEmojifyPost(logger, emojifyClient)
 	ehg := handlers.NewEmojifyGet(logger, emojifyClient)
 
-	r.Handle("/emojify/{id}", ehg).Methods("GET")
-	r.Handle("/emojify/", ehp).Methods("POST")
-	r.Handle("/health", hh).Methods("GET")
-	cacheRouter.Handle("/{file}", ch).Methods("GET")
+	// configure routing
+	r := mux.NewRouter()
+
+	// add profiling
+	// r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
+
+	baseRouter := r.PathPrefix(*path).Subrouter()            // base subrouter with no middleware
+	cacheRouter := r.PathPrefix(*path + "cache").Subrouter() // caching subrouter
+
+	baseRouter.Handle("/emojify/", ehp).Methods("POST")
+	baseRouter.Handle("/emojify/{id}", ehg).Methods("GET")
+	baseRouter.Handle("/health", hh).Methods("GET")
+	cacheRouter.Handle("/{id}", ch).Methods("GET")
 
 	// Setup error injection for testing
 	if *cacheErrorRate != 0.0 {
@@ -135,6 +141,7 @@ func main() {
 
 	handler := c.Handler(r)
 
+	logger.Log().Info("Starting server")
 	err = http.ListenAndServe(*bindAddress, handler)
 	logger.Log().Error("Unable to start server", "error", err)
 }
