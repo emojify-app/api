@@ -54,7 +54,7 @@ func TestGetReturnsBadRequestWhenNoId(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
 
-func TestGetReturnsInternalErrorWhenCacheError(t *testing.T) {
+func TestGetReturns404ErrorWhenCacheError(t *testing.T) {
 	rr, r, e := setupEmojiGetHandler("abc123")
 	resetEmojifyMock()
 	mockEmojifyer.On(
@@ -69,7 +69,7 @@ func TestGetReturnsInternalErrorWhenCacheError(t *testing.T) {
 
 	e.ServeHTTP(rr, r)
 
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	assert.Equal(t, http.StatusNotFound, rr.Code)
 }
 
 func TestGetReturnsQueueItemWhenOk(t *testing.T) {
