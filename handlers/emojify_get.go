@@ -23,7 +23,7 @@ func NewEmojifyGet(l logging.Logger, e emojify.EmojifyClient) *EmojifyGet {
 
 // ServeHTTP implements the handler function
 func (e *EmojifyGet) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	done := e.logger.CacheHandlerCalled(r)
+	done := e.logger.EmojifyHandlerGETCalled(r)
 
 	vars := mux.Vars(r) // Get varaibles from the request path
 
@@ -36,14 +36,18 @@ func (e *EmojifyGet) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// errors from the emojify api should be treated like 404, could just be a
+	// queue or cache item missing
 	qDone := e.logger.EmojifyHandlerCallQuery(id)
 	qi, err := e.emojify.Query(context.Background(), &wrappers.StringValue{Value: id})
 	if err != nil {
 		qDone(http.StatusInternalServerError, err)
 		done(http.StatusInternalServerError, err)
 
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusNotFound)
+		return
 	}
+
 	qDone(http.StatusOK, nil)
 
 	EmojifyResponse{}.FromQueryItem(qi).WriteJSON(rw)

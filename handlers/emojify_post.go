@@ -58,7 +58,7 @@ func NewEmojifyPost(l logging.Logger, e emojify.EmojifyClient) *EmojifyPost {
 
 // ServeHTTP implements the handler function
 func (e *EmojifyPost) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	done := e.logger.EmojifyHandlerCalled(r)
+	done := e.logger.EmojifyHandlerPOSTCalled(r)
 
 	// check the post body
 	data, err := e.checkPostBody(r)

@@ -24,7 +24,8 @@ type Logger interface {
 	CacheHandlerFileNotFound(f string)
 	CacheHandlerGetFile(f string) Finished
 
-	EmojifyHandlerCalled(r *http.Request) Finished
+	EmojifyHandlerPOSTCalled(r *http.Request) Finished
+	EmojifyHandlerGETCalled(r *http.Request) Finished
 	EmojifyHandlerNoPostBody()
 	EmojifyHandlerInvalidURL(uri string, err error)
 	EmojifyHandlerCallCreate(uri string) Finished
@@ -144,14 +145,25 @@ func (l *LoggerImpl) CacheHandlerGetFile(f string) Finished {
 	}
 }
 
-// EmojifyHandlerCalled logs information when the Emojify handler is called
-func (l *LoggerImpl) EmojifyHandlerCalled(r *http.Request) Finished {
+// EmojifyHandlerPOSTCalled logs information when the Emojify handler is called
+func (l *LoggerImpl) EmojifyHandlerPOSTCalled(r *http.Request) Finished {
 	st := time.Now()
-	l.l.Debug("Emojify called", "method", r.Method, "URI", r.URL.String())
+	l.l.Debug("Emojify POST called", "method", r.Method, "URI", r.URL.String())
 
 	return func(status int, err error) {
-		l.s.Timing(statsPrefix+"emojify.called", time.Now().Sub(st), getStatusTags(status), 1)
-		l.l.Debug("Emojify handler finished", "status", status)
+		l.s.Timing(statsPrefix+"emojify.post.called", time.Now().Sub(st), getStatusTags(status), 1)
+		l.l.Debug("Emojify POST handler finished", "status", status)
+	}
+}
+
+// EmojifyHandlerGETCalled logs information when the Emojify handler is called
+func (l *LoggerImpl) EmojifyHandlerGETCalled(r *http.Request) Finished {
+	st := time.Now()
+	l.l.Debug("Emojify GET called", "method", r.Method, "URI", r.URL.String())
+
+	return func(status int, err error) {
+		l.s.Timing(statsPrefix+"emojify.get.called", time.Now().Sub(st), getStatusTags(status), 1)
+		l.l.Debug("Emojify GET handler finished", "status", status)
 	}
 }
 
