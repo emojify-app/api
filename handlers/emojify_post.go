@@ -72,7 +72,7 @@ func (e *EmojifyPost) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	var u *url.URL
 	if u, err = e.validateURL(data); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
-		done(http.StatusBadRequest, nil)
+		done(http.StatusBadRequest, err)
 		return
 	}
 

@@ -152,6 +152,11 @@ func (l *LoggerImpl) EmojifyHandlerPOSTCalled(r *http.Request) Finished {
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.post.called", time.Now().Sub(st), getStatusTags(status), 1)
+		if err != nil {
+			l.l.Error("Emojify POST handler finished with error", "status", status, "err", err)
+			return
+		}
+
 		l.l.Debug("Emojify POST handler finished", "status", status)
 	}
 }
@@ -163,6 +168,10 @@ func (l *LoggerImpl) EmojifyHandlerGETCalled(r *http.Request) Finished {
 
 	return func(status int, err error) {
 		l.s.Timing(statsPrefix+"emojify.get.called", time.Now().Sub(st), getStatusTags(status), 1)
+		if err != nil {
+			l.l.Error("Emojify GET handler finished with error", "status", status, "err", err)
+			return
+		}
 		l.l.Debug("Emojify GET handler finished", "status", status)
 	}
 }
