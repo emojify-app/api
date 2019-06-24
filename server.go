@@ -49,6 +49,11 @@ var cacheErrorType = env.String("CACHE_ERROR_TYPE", false, "http_error", "Type o
 var cacheErrorCode = env.Int("CACHE_ERROR_CODE", false, http.StatusInternalServerError, "Error code to return on error")
 var cacheErrorDelay = env.Duration("CACHE_ERROR_DELAY", false, 0*time.Second, "Error delay [1s,100ms]")
 
+var emojifyErrorRate = env.Float64("EMOJIFY_ERROR_RATE", false, 0.0, "Percentage where emojify handler will report an error")
+var emojifyErrorType = env.String("EMOJIFY_ERROR_TYPE", false, "http_error", "Type of error [http_error, delay]")
+var emojifyErrorCode = env.Int("EMOJIFY_ERROR_CODE", false, http.StatusInternalServerError, "Error code to return on error")
+var emojifyErrorDelay = env.Duration("EMOJIFY_ERROR_DELAY", false, 0*time.Second, "Error delay [1s,100ms]")
+
 var help = flag.Bool("help", false, "--help to show help")
 
 func main() {
@@ -126,13 +131,21 @@ func main() {
 
 	// Setup error injection for testing
 	if *cacheErrorRate != 0.0 {
-		logger.Log().Info("Injecting errors into cache handler", "rate", *cacheErrorRate, "code", *cacheErrorCode)
+		logger.Log().Info("Injecting errors into cache handler",
+			"rate", *cacheErrorRate,
+			"code", *cacheErrorCode,
+			"type", cacheErrorType,
+			"delay", cacheErrorDelay)
 
 		em := handlers.NewErrorMiddleware(*cacheErrorRate, *cacheErrorCode, *cacheErrorDelay, *cacheErrorType, logger)
 		cacheRouter.Use(em.Middleware)
 
-		logger.Log().Info("Injecting errors into emojify handler", "rate", *cacheErrorRate, "code", *cacheErrorCode)
-		em2 := handlers.NewErrorMiddleware(*cacheErrorRate, *cacheErrorCode, *cacheErrorDelay, *cacheErrorType, logger)
+		logger.Log().Info("Injecting errors into emojify handler",
+			"rate", *emojifyErrorRate,
+			"code", *emojifyErrorCode,
+			"type", emojifyErrorType,
+			"delay", emojifyErrorDelay)
+		em2 := handlers.NewErrorMiddleware(*emojifyErrorRate, *emojifyErrorCode, *emojifyErrorDelay, *emojifyErrorType, logger)
 		emojifyRouter.Use(em2.Middleware)
 	}
 
