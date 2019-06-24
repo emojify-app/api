@@ -17,11 +17,7 @@ import (
 	"github.com/emojify-app/cache/protos/cache"
 	"github.com/emojify-app/emojify/protos/emojify"
 	"github.com/rs/cors"
-
 	//_ "net/http/pprof"
-	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-	opentracing "github.com/opentracing/opentracing-go"
-	zipkin "github.com/openzipkin/zipkin-go-opentracing"
 )
 
 func init() {
@@ -38,7 +34,6 @@ var allowedOrigin = env.String("ALLOW_ORIGIN", false, "*", "CORS origin")
 
 // external service flags
 var statsDServer = env.String("STATSD_SERVER", false, "localhost:8125", "StatsD server location")
-var tracerAddress = env.String("TRACER_ADDRESS", false, "localhost:9411", "Zipkin tracing collector location")
 var emojifyAddress = env.String("EMOJIFY_ADDRESS", false, "localhost", "Address for the Emojify service")
 var cacheAddress = env.String("CACHE_ADDRESS", false, "localhost", "Address for the Cache service")
 var paymentGatewayURI = env.String("PAYMENT_ADDRESS", false, "localhost", "Address for the Payment gateway service")
@@ -95,24 +90,9 @@ func main() {
 
 	logger.Log().Info("Api listening on", "path", *path)
 
-	// create the tracer
-	collector, _ := zipkin.NewHTTPCollector("http://" + *tracerAddress + "/api/v1/spans")
-	tracer, _ := zipkin.NewTracer(zipkin.NewRecorder(collector, false, "0.0.0.0", "emojify-api"))
-	opentracing.SetGlobalTracer(tracer)
-
 	// create the cache client
 	logger.Log().Info("Connecting to cache", "address", *cacheAddress)
-
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithStreamInterceptor(
-		grpcmiddleware.StreamClientInterceptor(
-			grpcmiddleware.WithTracer(opentracing.GlobalTracer()))))
-	opts = append(opts, grpc.WithUnaryInterceptor(
-		grpcmiddleware.UnaryClientInterceptor(
-			grpcmiddleware.WithTracer(opentracing.GlobalTracer()))))
-	opts = append(opts, grpc.WithInsecure())
-
-	cacheConn, err := grpc.Dial(*cacheAddress, opts...)
+	cacheConn, err := grpc.Dial(*cacheAddress, grpc.WithInsecure())
 	if err != nil {
 		logger.Log().Error("Unable to create cache gRPC client", err)
 		os.Exit(1)

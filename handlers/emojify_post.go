@@ -15,8 +15,7 @@ import (
 	"github.com/emojify-app/api/logging"
 	"github.com/emojify-app/emojify/protos/emojify"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
+	"google.golang.org/grpc/metadata"
 )
 
 // EmojifyResponse is a Go representation of the protobuf QueryItem
@@ -80,25 +79,9 @@ func (e *EmojifyPost) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	ecDone := e.logger.EmojifyHandlerCallCreate(u.String())
 
-	// create background with span
-	var serverSpan opentracing.Span
-	appSpecificOperationName := "emojify.create"
-	wireContext, err := opentracing.GlobalTracer().Extract(
-		opentracing.HTTPHeaders,
-		opentracing.HTTPHeadersCarrier(r.Header))
-	if err != nil {
-		e.logger.Log().Error("Unable to create span", "error", err)
-	}
+	// create a grpc context containing the parent span metadata
+	ctx := e.createContextFromRequest(r)
 
-	// Create the span referring to the RPC client if available.
-	// If wireContext == nil, a root span will be created.
-	serverSpan = opentracing.StartSpan(
-		appSpecificOperationName,
-		ext.RPCServerOption(wireContext))
-
-	defer serverSpan.Finish()
-
-	ctx := opentracing.ContextWithSpan(context.Background(), serverSpan)
 	resp, err := e.emojify.Create(ctx, &wrappers.StringValue{Value: u.String()})
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -122,6 +105,31 @@ func (e *EmojifyPost) checkPostBody(r *http.Request) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+func (e *EmojifyPost) createContextFromRequest(r *http.Request) context.Context {
+	var (
+		otHeaders = []string{
+			"x-request-id",
+			"x-b3-traceid",
+			"x-b3-spanid",
+			"x-b3-parentspanid",
+			"x-b3-sampled",
+			"x-b3-flags",
+			"x-ot-span-context"}
+	)
+	var pairs []string
+
+	for _, h := range otHeaders {
+		if v := r.Header.Get(h); len(v) > 0 {
+			pairs = append(pairs, h, v)
+		}
+	}
+
+	e.logger.Log().Debug("received headers", "pairs", pairs)
+
+	md := metadata.Pairs(pairs...)
+	return metadata.NewOutgoingContext(context.Background(), md)
 }
 
 func (e *EmojifyPost) validateURL(data []byte) (*url.URL, error) {
