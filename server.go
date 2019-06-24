@@ -115,12 +115,13 @@ func main() {
 	// add profiling
 	// r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 
-	baseRouter := r.PathPrefix(*path).Subrouter()            // base subrouter with no middleware
-	cacheRouter := r.PathPrefix(*path + "cache").Subrouter() // caching subrouter
+	baseRouter := r.PathPrefix(*path).Subrouter()                // base subrouter with no middleware
+	cacheRouter := r.PathPrefix(*path + "cache").Subrouter()     // caching subrouter
+	emojifyRouter := r.PathPrefix(*path + "emojify").Subrouter() // caching subrouter
 
-	baseRouter.Handle("/emojify/", ehp).Methods("POST")
-	baseRouter.Handle("/emojify/{id}", ehg).Methods("GET")
 	baseRouter.Handle("/health", hh).Methods("GET")
+	emojifyRouter.Handle("/", ehp).Methods("POST")
+	emojifyRouter.Handle("/{id}", ehg).Methods("GET")
 	cacheRouter.Handle("/{id}", ch).Methods("GET")
 
 	// Setup error injection for testing
@@ -129,6 +130,10 @@ func main() {
 
 		em := handlers.NewErrorMiddleware(*cacheErrorRate, *cacheErrorCode, *cacheErrorDelay, *cacheErrorType, logger)
 		cacheRouter.Use(em.Middleware)
+
+		logger.Log().Info("Injecting errors into emojify handler", "rate", *cacheErrorRate, "code", *cacheErrorCode)
+		em2 := handlers.NewErrorMiddleware(*cacheErrorRate, *cacheErrorCode, *cacheErrorDelay, *cacheErrorType, logger)
+		emojifyRouter.Use(em2.Middleware)
 	}
 
 	// setup CORS
