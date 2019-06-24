@@ -15,6 +15,8 @@ import (
 	"github.com/emojify-app/api/logging"
 	"github.com/emojify-app/emojify/protos/emojify"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 )
 
 // EmojifyResponse is a Go representation of the protobuf QueryItem
@@ -77,7 +79,27 @@ func (e *EmojifyPost) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	ecDone := e.logger.EmojifyHandlerCallCreate(u.String())
-	resp, err := e.emojify.Create(context.Background(), &wrappers.StringValue{Value: u.String()})
+
+	// create background with span
+	var serverSpan opentracing.Span
+	appSpecificOperationName := "emojify.create"
+	wireContext, err := opentracing.GlobalTracer().Extract(
+		opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(r.Header))
+	if err != nil {
+		e.logger.Log().Error("Unable to create span", "error", err)
+	}
+
+	// Create the span referring to the RPC client if available.
+	// If wireContext == nil, a root span will be created.
+	serverSpan = opentracing.StartSpan(
+		appSpecificOperationName,
+		ext.RPCServerOption(wireContext))
+
+	defer serverSpan.Finish()
+
+	ctx := opentracing.ContextWithSpan(context.Background(), serverSpan)
+	resp, err := e.emojify.Create(ctx, &wrappers.StringValue{Value: u.String()})
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		ecDone(http.StatusInternalServerError, err)

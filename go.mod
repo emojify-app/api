@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/mux v1.7.1
 	github.com/hashicorp/go-hclog v0.8.0
 	github.com/nicholasjackson/env v0.5.0
+	github.com/opentracing/opentracing-go v1.1.0
 	github.com/rs/cors v1.6.0
 	github.com/stretchr/testify v1.3.0
 	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3 // indirect
