@@ -19,6 +19,7 @@ import (
 	"github.com/rs/cors"
 
 	//_ "net/http/pprof"
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	opentracing "github.com/opentracing/opentracing-go"
 	zipkin "github.com/openzipkin/zipkin-go-opentracing"
 )
@@ -101,7 +102,17 @@ func main() {
 
 	// create the cache client
 	logger.Log().Info("Connecting to cache", "address", *cacheAddress)
-	cacheConn, err := grpc.Dial(*cacheAddress, grpc.WithInsecure())
+
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithStreamInterceptor(
+		grpcmiddleware.StreamClientInterceptor(
+			grpcmiddleware.WithTracer(opentracing.GlobalTracer()))))
+	opts = append(opts, grpc.WithUnaryInterceptor(
+		grpcmiddleware.UnaryClientInterceptor(
+			grpcmiddleware.WithTracer(opentracing.GlobalTracer()))))
+	opts = append(opts, grpc.WithInsecure())
+
+	cacheConn, err := grpc.Dial(*cacheAddress, opts...)
 	if err != nil {
 		logger.Log().Error("Unable to create cache gRPC client", err)
 		os.Exit(1)
